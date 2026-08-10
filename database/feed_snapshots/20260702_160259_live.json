@@ -1,0 +1,58 @@
+{
+  "saved_at": 1783008179.252675,
+  "label": "live",
+  "match_count": 3,
+  "matches": [
+    {
+      "match_name": "USA - Belgium",
+      "market": "MS1",
+      "sharp_odds": 2.67,
+      "soft_odds": 1.88,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1783008178.385251,
+      "soft_observed_at": 1783008173.618922,
+      "sharp_observed_at": 1783008178.380526,
+      "consensus_books": 5,
+      "event_id": "810f80b3ae79f5e86b3747ca15718ed8",
+      "commence_time": "2026-07-07T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "USA - Belgium",
+      "market": "X",
+      "sharp_odds": 3.52,
+      "soft_odds": 2.9,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1783008178.385251,
+      "soft_observed_at": 1783008173.6189241,
+      "sharp_observed_at": 1783008178.380526,
+      "consensus_books": 5,
+      "event_id": "810f80b3ae79f5e86b3747ca15718ed8",
+      "commence_time": "2026-07-07T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "USA - Belgium",
+      "market": "MS2",
+      "sharp_odds": 2.77,
+      "soft_odds": 3.15,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1783008178.385251,
+      "soft_observed_at": 1783008173.6189241,
+      "sharp_observed_at": 1783008178.380526,
+      "consensus_books": 5,
+      "event_id": "810f80b3ae79f5e86b3747ca15718ed8",
+      "commence_time": "2026-07-07T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    }
+  ]
+}

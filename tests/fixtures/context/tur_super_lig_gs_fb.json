@@ -1,0 +1,99 @@
+{
+  "_note": "Test fixture only. Gercek takim adlari; istatistikler unit test icin sabit ornek yuk, canli API cekimi degil.",
+  "match": {
+    "event_id": "fixture-gs-fb-202602",
+    "sport_key": "soccer_turkey_super_league",
+    "match_name": "Galatasaray - Fenerbahce",
+    "league_name": "Turkiye Super Lig",
+    "commence_time": "2026-02-23T17:00:00Z",
+    "match_quality": "ok"
+  },
+  "standings": {
+    "sport_key": "soccer_turkey_super_league",
+    "season": "2025",
+    "teams": [
+      {
+        "team_name": "Galatasaray",
+        "team_key": "galatasaray",
+        "rank": 1,
+        "points": 48,
+        "played": 20,
+        "goals_for": 44,
+        "goals_against": 18,
+        "form": "WDWWW"
+      },
+      {
+        "team_name": "Fenerbahce",
+        "team_key": "fenerbahce",
+        "rank": 2,
+        "points": 46,
+        "played": 20,
+        "goals_for": 41,
+        "goals_against": 19,
+        "form": "DWWWL"
+      }
+    ]
+  },
+  "home_form": {
+    "team_key": "galatasaray",
+    "last_matches": [
+      {"result": "W", "goals_for": 2, "goals_against": 1, "is_home": true},
+      {"result": "D", "goals_for": 1, "goals_against": 1, "is_home": false},
+      {"result": "W", "goals_for": 3, "goals_against": 0, "is_home": true}
+    ]
+  },
+  "away_form": {
+    "team_key": "fenerbahce",
+    "last_matches": [
+      {"result": "D", "goals_for": 0, "goals_against": 0, "is_home": true},
+      {"result": "W", "goals_for": 2, "goals_against": 1, "is_home": false},
+      {"result": "W", "goals_for": 1, "goals_against": 0, "is_home": true}
+    ]
+  },
+  "h2h": {
+    "home_team_key": "galatasaray",
+    "away_team_key": "fenerbahce",
+    "matches": [
+      {
+        "home_team_key": "galatasaray",
+        "away_team_key": "fenerbahce",
+        "home_goals": 3,
+        "away_goals": 1
+      },
+      {
+        "home_team_key": "fenerbahce",
+        "away_team_key": "galatasaray",
+        "home_goals": 1,
+        "away_goals": 1
+      },
+      {
+        "home_team_key": "galatasaray",
+        "away_team_key": "fenerbahce",
+        "home_goals": 0,
+        "away_goals": 1
+      }
+    ]
+  },
+  "injuries": {
+    "home_absences": [
+      {"player": "Player A", "reason": "injury"}
+    ],
+    "away_absences": [
+      {"player": "Player B", "reason": "injury"},
+      {"player": "Player C", "reason": "suspended"}
+    ]
+  },
+  "expected": {
+    "home_rank": 1,
+    "away_rank": 2,
+    "rank_diff": -1,
+    "home_points_per_game": 2.4,
+    "away_points_per_game": 2.3,
+    "home_form_ppg": 2.3333,
+    "away_form_ppg": 2.3333,
+    "h2h_home_win_rate": 0.3333,
+    "h2h_avg_total_goals": 2.3333,
+    "home_injury_count": 1,
+    "away_injury_count": 2
+  }
+}

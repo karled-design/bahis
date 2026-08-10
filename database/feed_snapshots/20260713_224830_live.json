@@ -1,0 +1,45 @@
+{
+  "saved_at": 1783982910.6454,
+  "label": "live",
+  "match_count": 2,
+  "matches": [
+    {
+      "match_name": "Ceará - Athletic Club (MG)",
+      "market": "ALT 2.5",
+      "sharp_odds": 1.54,
+      "soft_odds": 1.33,
+      "league_name": "Brazil Série B",
+      "observed_at": 1783982910.306433,
+      "soft_observed_at": 1783982909.3972638,
+      "sharp_observed_at": 1783982910.296119,
+      "consensus_books": 11,
+      "event_id": "224d8212c089b064d542230ade40cdaf",
+      "commence_time": "2026-07-13T23:30:00Z",
+      "sport_key": "soccer_brazil_serie_b",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "fair_probability": 0.603093,
+      "market_overround": 1.0767,
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Ceará - Athletic Club (MG)",
+      "market": "UST 2.5",
+      "sharp_odds": 2.34,
+      "soft_odds": 2.07,
+      "league_name": "Brazil Série B",
+      "observed_at": 1783982910.306433,
+      "soft_observed_at": 1783982909.3972669,
+      "sharp_observed_at": 1783982910.296119,
+      "consensus_books": 11,
+      "event_id": "224d8212c089b064d542230ade40cdaf",
+      "commence_time": "2026-07-13T23:30:00Z",
+      "sport_key": "soccer_brazil_serie_b",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "fair_probability": 0.396907,
+      "market_overround": 1.0767,
+      "match_quality": "ok"
+    }
+  ]
+}

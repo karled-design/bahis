@@ -1,0 +1,140 @@
+{
+  "_note": "Theory-lab: tekrarlayan, eski ve sahte bildirim senaryolari. Canli API degil.",
+  "cases": [
+    {
+      "id": "ok-prematch",
+      "match": {
+        "event_id": "ng-ok-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Brazil - Morocco",
+        "league_name": "FIFA World Cup",
+        "match_quality": "ok",
+        "commence_time": "2099-06-19T18:00:00Z",
+        "soft_observed_at": 4102444800,
+        "sharp_observed_at": 4102444800
+      },
+      "market": "MS1",
+      "soft_odds": 2.1,
+      "sharp_odds": 2.0,
+      "tier": "ACTION",
+      "expect_allow": true
+    },
+    {
+      "id": "virtual-block",
+      "match": {
+        "event_id": "ng-virtual-001",
+        "sport_key": "soccer_epl",
+        "match_name": "E-Futbol | Team A - Team B",
+        "match_quality": "ok",
+        "commence_time": "2099-06-19T18:00:00Z"
+      },
+      "market": "MS1",
+      "soft_odds": 2.2,
+      "sharp_odds": 2.0,
+      "expect_allow": false,
+      "expect_reason_prefix": "theory_sanal"
+    },
+    {
+      "id": "suspicious-block",
+      "match": {
+        "event_id": "ng-suspicious-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Germany - France",
+        "match_quality": "suspicious",
+        "commence_time": "2099-06-19T18:00:00Z"
+      },
+      "market": "MS1",
+      "soft_odds": 11.9,
+      "sharp_odds": 1.32,
+      "expect_allow": false,
+      "expect_reason_prefix": "theory_supheli"
+    },
+    {
+      "id": "completed-block",
+      "match": {
+        "event_id": "ng-completed-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Spain - Italy",
+        "match_quality": "ok",
+        "commence_time": "2020-06-19T18:00:00Z",
+        "completed": true
+      },
+      "market": "MS2",
+      "soft_odds": 3.0,
+      "sharp_odds": 2.8,
+      "expect_allow": false,
+      "expect_reason_prefix": "theory_mac_penceresi"
+    },
+    {
+      "id": "old-kickoff-block",
+      "match": {
+        "event_id": "ng-old-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Argentina - Chile",
+        "match_quality": "ok",
+        "commence_time": "2020-01-01T12:00:00Z"
+      },
+      "market": "MS1",
+      "soft_odds": 2.0,
+      "sharp_odds": 1.9,
+      "expect_allow": false,
+      "expect_reason_prefix": "theory_mac_penceresi"
+    },
+    {
+      "id": "duplicate-notification-block",
+      "match": {
+        "event_id": "ng-dup-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "DR Congo - Uzbekistan",
+        "match_quality": "ok",
+        "commence_time": "2099-06-19T18:00:00Z",
+        "soft_observed_at": 4102444800,
+        "sharp_observed_at": 4102444800
+      },
+      "notify_key": "dr congo - uzbekistan|MS2",
+      "mac_adi": "DR Congo - Uzbekistan",
+      "market": "MS2",
+      "soft_odds": 3.0,
+      "sharp_odds": 2.44,
+      "seed_notification": true,
+      "bypass_dedup": false,
+      "expect_allow": false,
+      "expect_reason_prefix": "fixture_bildirim"
+    },
+    {
+      "id": "existing-kupon-block",
+      "match": {
+        "event_id": "ng-kupon-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Portugal - Netherlands",
+        "match_quality": "ok",
+        "commence_time": "2099-06-19T18:00:00Z",
+        "soft_observed_at": 4102444800,
+        "sharp_observed_at": 4102444800
+      },
+      "mac_adi": "Portugal - Netherlands",
+      "market": "MS1",
+      "soft_odds": 2.05,
+      "sharp_odds": 1.95,
+      "seed_kupon": true,
+      "bypass_dedup": false,
+      "expect_allow": false,
+      "expect_reason_prefix": "fixture_kupon"
+    },
+    {
+      "id": "dry-run-block",
+      "match": {
+        "event_id": "dry-run-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Dry Run Home - Dry Run Away",
+        "match_quality": "ok",
+        "commence_time": "2099-06-19T18:00:00Z"
+      },
+      "market": "MS1",
+      "soft_odds": 2.0,
+      "sharp_odds": 1.9,
+      "expect_allow": false,
+      "expect_reason_prefix": "theory_dry_run"
+    }
+  ]
+}

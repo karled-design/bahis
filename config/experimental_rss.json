@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "id": "tff",
+      "label": "TFF Haberler",
+      "url": "https://www.tff.org/Resources/RSS/Haberler.xml"
+    },
+    {
+      "id": "galatasaray",
+      "label": "Galatasaray",
+      "url": "https://www.galatasaray.org/rss/news"
+    },
+    {
+      "id": "fenerbahce",
+      "label": "Fenerbahce",
+      "url": "https://www.fenerbahce.org/rss/news"
+    }
+  ]
+}

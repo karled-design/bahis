@@ -1,0 +1,14 @@
+{
+  "response": [
+    {
+      "fixture": {
+        "id": 900001,
+        "date": "2026-06-19T18:00:00+00:00"
+      },
+      "teams": {
+        "home": {"id": 645, "name": "Galatasaray"},
+        "away": {"id": 611, "name": "Fenerbahce"}
+      }
+    }
+  ]
+}

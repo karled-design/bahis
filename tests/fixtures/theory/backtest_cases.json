@@ -1,0 +1,214 @@
+{
+  "_note": "Theory-lab backtest fixture. Gercek takim adlari; sonuc ve oranlar test senaryosu icin sabit. Canli Odds API cekimi degil.",
+  "cases": [
+    {
+      "id": "gs-fb-ms1-won",
+      "commence_time": "2026-02-23T17:00:00Z",
+      "match": {
+        "event_id": "bt-gs-fb-001",
+        "sport_key": "soccer_turkey_super_league",
+        "match_name": "Galatasaray - Fenerbahce",
+        "league_name": "Turkiye Super Lig",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 2.10,
+      "soft_odds": 2.26,
+      "consensus_books": 3,
+      "result": "WON",
+      "context": {
+        "standings": {
+          "teams": [
+            {"team_key": "galatasaray", "team_name": "Galatasaray", "rank": 1, "points": 48, "played": 20, "goals_for": 44, "goals_against": 18, "form": "WDWWW"},
+            {"team_key": "fenerbahce", "team_name": "Fenerbahce", "rank": 2, "points": 46, "played": 20, "goals_for": 41, "goals_against": 19, "form": "DWWWL"}
+          ]
+        },
+        "home_form": {"team_key": "galatasaray", "last_matches": [{"result": "W"}, {"result": "W"}, {"result": "D"}]},
+        "away_form": {"team_key": "fenerbahce", "last_matches": [{"result": "D"}, {"result": "W"}, {"result": "L"}]},
+        "h2h": {
+          "home_team_key": "galatasaray",
+          "away_team_key": "fenerbahce",
+          "matches": [
+            {"home_team_key": "galatasaray", "away_team_key": "fenerbahce", "home_goals": 2, "away_goals": 1},
+            {"home_team_key": "fenerbahce", "away_team_key": "galatasaray", "home_goals": 0, "away_goals": 2}
+          ]
+        },
+        "injuries": {"home_absences": [], "away_absences": [{"player": "A", "reason": "injury"}]}
+      }
+    },
+    {
+      "id": "arsenal-chelsea-ms1-lost",
+      "commence_time": "2026-03-01T15:00:00Z",
+      "match": {
+        "event_id": "bt-ars-che-001",
+        "sport_key": "soccer_epl",
+        "match_name": "Arsenal - Chelsea",
+        "league_name": "Premier League",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 2.40,
+      "soft_odds": 2.55,
+      "consensus_books": 3,
+      "result": "LOST",
+      "context": {
+        "standings": {
+          "teams": [
+            {"team_key": "arsenal", "team_name": "Arsenal", "rank": 4, "points": 40, "played": 22, "goals_for": 38, "goals_against": 24, "form": "DLWWL"},
+            {"team_key": "chelsea", "team_name": "Chelsea", "rank": 2, "points": 46, "played": 22, "goals_for": 42, "goals_against": 22, "form": "WWWDW"}
+          ]
+        },
+        "home_form": {"team_key": "arsenal", "last_matches": [{"result": "L"}, {"result": "D"}, {"result": "W"}]},
+        "away_form": {"team_key": "chelsea", "last_matches": [{"result": "W"}, {"result": "W"}, {"result": "W"}]},
+        "h2h": {
+          "home_team_key": "arsenal",
+          "away_team_key": "chelsea",
+          "matches": [
+            {"home_team_key": "chelsea", "away_team_key": "arsenal", "home_goals": 2, "away_goals": 0},
+            {"home_team_key": "arsenal", "away_team_key": "chelsea", "home_goals": 1, "away_goals": 1}
+          ]
+        },
+        "injuries": {"home_absences": [{"player": "B", "reason": "injury"}], "away_absences": []}
+      }
+    },
+    {
+      "id": "liverpool-city-ms2-won",
+      "commence_time": "2026-03-08T16:30:00Z",
+      "match": {
+        "event_id": "bt-liv-mci-001",
+        "sport_key": "soccer_epl",
+        "match_name": "Liverpool - Manchester City",
+        "league_name": "Premier League",
+        "match_quality": "ok"
+      },
+      "market": "MS2",
+      "sharp_odds": 2.30,
+      "soft_odds": 2.45,
+      "consensus_books": 4,
+      "result": "WON",
+      "context": {
+        "standings": {
+          "teams": [
+            {"team_key": "liverpool", "team_name": "Liverpool", "rank": 3, "points": 44, "played": 22, "goals_for": 45, "goals_against": 28, "form": "WDLWW"},
+            {"team_key": "manchester_city", "team_name": "Manchester City", "rank": 1, "points": 50, "played": 22, "goals_for": 48, "goals_against": 20, "form": "WWWWW"}
+          ]
+        },
+        "home_form": {"team_key": "liverpool", "last_matches": [{"result": "D"}, {"result": "W"}, {"result": "L"}]},
+        "away_form": {"team_key": "manchester_city", "last_matches": [{"result": "W"}, {"result": "W"}, {"result": "W"}]},
+        "h2h": {
+          "home_team_key": "liverpool",
+          "away_team_key": "manchester_city",
+          "matches": [
+            {"home_team_key": "manchester_city", "away_team_key": "liverpool", "home_goals": 3, "away_goals": 1},
+            {"home_team_key": "liverpool", "away_team_key": "manchester_city", "home_goals": 1, "away_goals": 2}
+          ]
+        },
+        "injuries": {"home_absences": [{"player": "C", "reason": "injury"}, {"player": "D", "reason": "injury"}], "away_absences": []}
+      }
+    },
+    {
+      "id": "besiktas-trabzon-ms1-lost",
+      "commence_time": "2026-03-15T18:00:00Z",
+      "match": {
+        "event_id": "bt-bjk-ts-001",
+        "sport_key": "soccer_turkey_super_league",
+        "match_name": "Besiktas - Trabzonspor",
+        "league_name": "Turkiye Super Lig",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 2.05,
+      "soft_odds": 2.18,
+      "consensus_books": 2,
+      "result": "LOST",
+      "context": {
+        "standings": {
+          "teams": [
+            {"team_key": "besiktas", "team_name": "Besiktas", "rank": 6, "points": 30, "played": 20, "goals_for": 28, "goals_against": 26, "form": "LLWDL"},
+            {"team_key": "trabzonspor", "team_name": "Trabzonspor", "rank": 3, "points": 38, "played": 20, "goals_for": 35, "goals_against": 24, "form": "WDWWL"}
+          ]
+        },
+        "home_form": {"team_key": "besiktas", "last_matches": [{"result": "L"}, {"result": "L"}, {"result": "D"}]},
+        "away_form": {"team_key": "trabzonspor", "last_matches": [{"result": "W"}, {"result": "D"}, {"result": "W"}]},
+        "h2h": {
+          "home_team_key": "besiktas",
+          "away_team_key": "trabzonspor",
+          "matches": [
+            {"home_team_key": "trabzonspor", "away_team_key": "besiktas", "home_goals": 2, "away_goals": 0}
+          ]
+        },
+        "injuries": {"home_absences": [{"player": "E", "reason": "injury"}], "away_absences": []}
+      }
+    },
+    {
+      "id": "low-ev-skip",
+      "commence_time": "2026-03-20T14:00:00Z",
+      "match": {
+        "event_id": "bt-low-ev-001",
+        "sport_key": "soccer_spain_la_liga",
+        "match_name": "Barcelona - Real Madrid",
+        "league_name": "La Liga",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 2.00,
+      "soft_odds": 2.03,
+      "consensus_books": 3,
+      "result": "WON",
+      "context": {
+        "standings": {
+          "teams": [
+            {"team_key": "barcelona", "team_name": "Barcelona", "rank": 1, "points": 50, "played": 22, "goals_for": 50, "goals_against": 20, "form": "WWWWW"},
+            {"team_key": "real_madrid", "team_name": "Real Madrid", "rank": 2, "points": 48, "played": 22, "goals_for": 46, "goals_against": 22, "form": "WDWWW"}
+          ]
+        }
+      }
+    },
+    {
+      "id": "virtual-skip",
+      "commence_time": "2026-03-21T14:00:00Z",
+      "match": {
+        "event_id": "bt-virtual-001",
+        "sport_key": "soccer_epl",
+        "match_name": "E-Futbol | Team A - Team B",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 2.00,
+      "soft_odds": 2.20,
+      "consensus_books": 3,
+      "result": "LOST"
+    },
+    {
+      "id": "suspicious-skip",
+      "commence_time": "2026-03-22T14:00:00Z",
+      "match": {
+        "event_id": "bt-suspicious-001",
+        "sport_key": "soccer_fifa_world_cup",
+        "match_name": "Germany - France",
+        "match_quality": "suspicious"
+      },
+      "market": "MS1",
+      "sharp_odds": 1.32,
+      "soft_odds": 11.90,
+      "consensus_books": 5,
+      "result": "LOST"
+    },
+    {
+      "id": "ev-only-no-context-lost",
+      "commence_time": "2026-03-23T14:00:00Z",
+      "match": {
+        "event_id": "bt-nctx-001",
+        "sport_key": "soccer_germany_bundesliga",
+        "match_name": "Bayern Munich - Borussia Dortmund",
+        "league_name": "Bundesliga",
+        "match_quality": "ok"
+      },
+      "market": "MS1",
+      "sharp_odds": 1.95,
+      "soft_odds": 2.08,
+      "consensus_books": 3,
+      "result": "LOST"
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "saved_at": 1781889917.1341062,
+  "label": "live",
+  "match_count": 3,
+  "matches": [
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "MS1",
+      "sharp_odds": 2.14,
+      "soft_odds": 1.85,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781889914.8554208,
+      "soft_observed_at": 1781889912.74008,
+      "sharp_observed_at": 1781889914.8467698,
+      "consensus_books": 4,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "X",
+      "sharp_odds": 3.63,
+      "soft_odds": 3.09,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781889914.8554208,
+      "soft_observed_at": 1781889912.7400808,
+      "sharp_observed_at": 1781889914.8467698,
+      "consensus_books": 4,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "MS2",
+      "sharp_odds": 3.34,
+      "soft_odds": 3.05,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781889914.8554208,
+      "soft_observed_at": 1781889912.740082,
+      "sharp_observed_at": 1781889914.8467698,
+      "consensus_books": 4,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    }
+  ]
+}

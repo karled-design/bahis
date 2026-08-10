@@ -1,0 +1,52 @@
+{
+  "saved_at": 1781842522.4967859,
+  "label": "live",
+  "match_count": 3,
+  "matches": [
+    {
+      "match_name": "Panama - England",
+      "market": "MS1",
+      "sharp_odds": 10.11,
+      "soft_odds": 2.08,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781842522.048244,
+      "soft_observed_at": 1781842520.057568,
+      "sharp_observed_at": 1781842522.0472589,
+      "consensus_books": 4,
+      "event_id": "4be17c8e1ccfecb0f2a5ef79e045c415",
+      "commence_time": "2026-06-27T21:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "suspicious"
+    },
+    {
+      "match_name": "Panama - England",
+      "market": "X",
+      "sharp_odds": 6.58,
+      "soft_odds": 2.8,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781842522.048244,
+      "soft_observed_at": 1781842520.057569,
+      "sharp_observed_at": 1781842522.0472589,
+      "consensus_books": 4,
+      "event_id": "4be17c8e1ccfecb0f2a5ef79e045c415",
+      "commence_time": "2026-06-27T21:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Panama - England",
+      "market": "MS2",
+      "sharp_odds": 1.25,
+      "soft_odds": 2.83,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1781842522.048244,
+      "soft_observed_at": 1781842520.057569,
+      "sharp_observed_at": 1781842522.0472589,
+      "consensus_books": 4,
+      "event_id": "4be17c8e1ccfecb0f2a5ef79e045c415",
+      "commence_time": "2026-06-27T21:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    }
+  ]
+}

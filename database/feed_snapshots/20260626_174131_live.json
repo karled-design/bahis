@@ -1,0 +1,67 @@
+{
+  "saved_at": 1782495691.3426418,
+  "label": "live",
+  "match_count": 4,
+  "matches": [
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "MS1",
+      "sharp_odds": 1.82,
+      "soft_odds": 1.54,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782495690.262348,
+      "soft_observed_at": 1782495686.5774772,
+      "sharp_observed_at": 1782495690.2506502,
+      "consensus_books": 5,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "X",
+      "sharp_odds": 4.01,
+      "soft_odds": 3.52,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782495690.262348,
+      "soft_observed_at": 1782495686.5774798,
+      "sharp_observed_at": 1782495690.2506502,
+      "consensus_books": 5,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "DR Congo - Uzbekistan",
+      "market": "MS2",
+      "sharp_odds": 4.47,
+      "soft_odds": 3.86,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782495690.262348,
+      "soft_observed_at": 1782495686.577481,
+      "sharp_observed_at": 1782495690.2506502,
+      "consensus_books": 5,
+      "event_id": "13eab94a136b9c264ba974cf437a5f71",
+      "commence_time": "2026-06-27T23:30:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Senegal - Iraq",
+      "market": "MS1",
+      "sharp_odds": 1.23,
+      "soft_odds": 1.06,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782495690.262348,
+      "soft_observed_at": 1782495686.577644,
+      "sharp_observed_at": 1782495690.2506502,
+      "consensus_books": 6,
+      "event_id": "7e6aee294ea1a4792c59558791084528",
+      "commence_time": "2026-06-26T19:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "match_quality": "ok"
+    }
+  ]
+}

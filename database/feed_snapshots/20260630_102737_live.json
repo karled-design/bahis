@@ -1,0 +1,58 @@
+{
+  "saved_at": 1782815257.2306209,
+  "label": "live",
+  "match_count": 3,
+  "matches": [
+    {
+      "match_name": "Canada - Morocco",
+      "market": "MS1",
+      "sharp_odds": 5.17,
+      "soft_odds": 1.98,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782815256.808762,
+      "soft_observed_at": 1782815252.3186839,
+      "sharp_observed_at": 1782815256.8074439,
+      "consensus_books": 5,
+      "event_id": "9c7073ae2c29ee4881bb695f92168c68",
+      "commence_time": "2026-07-04T17:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Canada - Morocco",
+      "market": "X",
+      "sharp_odds": 3.64,
+      "soft_odds": 2.79,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782815256.808762,
+      "soft_observed_at": 1782815252.3186848,
+      "sharp_observed_at": 1782815256.8074439,
+      "consensus_books": 5,
+      "event_id": "9c7073ae2c29ee4881bb695f92168c68",
+      "commence_time": "2026-07-04T17:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Canada - Morocco",
+      "market": "MS2",
+      "sharp_odds": 1.81,
+      "soft_odds": 3.02,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782815256.808762,
+      "soft_observed_at": 1782815252.318686,
+      "sharp_observed_at": 1782815256.8074439,
+      "consensus_books": 5,
+      "event_id": "9c7073ae2c29ee4881bb695f92168c68",
+      "commence_time": "2026-07-04T17:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+---
+description: SQE-V1 web panel (index.html) UI değişikliklerinde manifest ve kılavuz uyumu
+globs:
+  - index.html
+  - docs/panel-ui-manifest.md
+  - SQE_V1_Kullanim_Kilavuzu.md
+alwaysApply: false
+---
+
+# Panel UI değişiklik kuralı
+
+Panel arayüzü (`index.html`) ile ilgili görevlerde **önce oku:**
+
+`docs/panel-ui-manifest.md`
+
+## Zorunlu ilkeler
+
+1. **Tek dosya varsayılan:** UX değişiklikleri yalnızca `index.html` — backend’e dokunma unless `/api/status` yeni alan gerektirir.
+2. **DOM ID:** Mevcut ID’leri silme/rename etme; manifestteki tabloya uy veya manifesti güncelle.
+3. **Kontrol / durum:** Ayarlanabilir öğeler `.settings-control-block`; salt okunur metrikler `.settings-status-block` + `renderSettingsLiveGrid`.
+4. **Snapshot uyumu:** Lig/profil formatları için mevcut helper’ları kullan (`formatOverviewLeaguesLine`, `formatHeroStrategySummary`, `formatNotifyAccordionSummary`).
+5. **Mobil:** Yeni accordion eklenirse `bindExclusivePanelAccordions` zone seçicilerine dahil et.
+6. **Test:** `python -m unittest discover -s tests -q`
+7. **Dokümantasyon:** Kullanıcıya görünen metin → `SQE_V1_Kullanim_Kilavuzu.md`; teknik kayıt → manifest changelog + sürüm.
+
+## Bitiş kontrol listesi
+
+- [ ] Manifest sürüm/tarih/changelog güncellendi
+- [ ] Kılavuz panel bölümü gerekirse güncellendi
+- [ ] 191 test suite geçiyor

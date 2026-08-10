@@ -1,0 +1,9 @@
+{
+  "watch_ev": 0.014,
+  "action_ev": 0.022,
+  "soft_odds_min": 1.15,
+  "soft_odds_max": 7.0,
+  "risk_per_trade": 0.022,
+  "context_mode": "filter",
+  "updated_at": "2026-07-13T18:01:31.707170+00:00"
+}

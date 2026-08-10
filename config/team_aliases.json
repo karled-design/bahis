@@ -1,0 +1,52 @@
+{
+  "teams": [
+    {
+      "sport_key": "soccer_turkey_super_league",
+      "team_id": 645,
+      "display_name": "Galatasaray",
+      "aliases": ["GS", "Gala", "Galatasaray SK", "Galatasaray SK."]
+    },
+    {
+      "sport_key": "soccer_turkey_super_league",
+      "team_id": 611,
+      "display_name": "Fenerbahce",
+      "aliases": ["FB", "Fener", "Fenerbahce SK", "Fenerbahce SK."]
+    },
+    {
+      "sport_key": "soccer_turkey_super_league",
+      "team_id": 549,
+      "display_name": "Besiktas",
+      "aliases": ["BJK", "Besiktas JK", "Besiktas J.K."]
+    },
+    {
+      "sport_key": "soccer_turkey_super_league",
+      "team_id": 998,
+      "display_name": "Trabzonspor",
+      "aliases": ["TS", "Trabzon"]
+    },
+    {
+      "sport_key": "soccer_turkey_super_league",
+      "team_id": 564,
+      "display_name": "Istanbul Basaksehir",
+      "aliases": ["Basaksehir", "Basaksehir FK", "Istanbul Basaksehir FK"]
+    },
+    {
+      "sport_key": "international",
+      "team_id": 777,
+      "display_name": "Turkey",
+      "aliases": ["Turkiye", "Türkiye", "Turkey", "TR", "A Milli Takim", "A Milli"]
+    },
+    {
+      "sport_key": "international",
+      "team_id": 25,
+      "display_name": "Germany",
+      "aliases": ["Almanya", "Germany", "GER", "Deutschland"]
+    },
+    {
+      "sport_key": "international",
+      "team_id": 2,
+      "display_name": "France",
+      "aliases": ["Fransa", "France", "FRA"]
+    }
+  ]
+}

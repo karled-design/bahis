@@ -1,0 +1,35 @@
+{
+  "response": [
+    {
+      "league": {
+        "id": 203,
+        "name": "Super Lig",
+        "season": 2026,
+        "standings": [
+          [
+            {
+              "rank": 1,
+              "points": 70,
+              "form": "WWWDW",
+              "team": {"id": 645, "name": "Galatasaray"},
+              "all": {
+                "played": 34,
+                "goals": {"for": 78, "against": 28}
+              }
+            },
+            {
+              "rank": 2,
+              "points": 68,
+              "form": "WDWWL",
+              "team": {"id": 611, "name": "Fenerbahce"},
+              "all": {
+                "played": 34,
+                "goals": {"for": 72, "against": 30}
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{"ts": "2026-07-06T06:18:41.166892+00:00", "path": "ev", "match_name": "Galatasaray - Fenerbahce", "market": "MS1", "mode": "shadow", "evaluation": {"modules_checked": 1, "would_filter": true, "reasons": ["haber_sakatlik"], "modules": [{"module": "news_signals", "keep": false, "reason": "haber_sakatlik", "detail": "ev_sahibi tarafinda 3 eksik (esik 3+)"}]}}

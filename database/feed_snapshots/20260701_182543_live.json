@@ -1,0 +1,58 @@
+{
+  "saved_at": 1782930343.052772,
+  "label": "live",
+  "match_count": 3,
+  "matches": [
+    {
+      "match_name": "Mexico - England",
+      "market": "MS1",
+      "sharp_odds": 3.46,
+      "soft_odds": 1.98,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782930342.434848,
+      "soft_observed_at": 1782930338.195885,
+      "sharp_observed_at": 1782930342.432703,
+      "consensus_books": 5,
+      "event_id": "e61a7b471cadc8e3849158ed59d49cab",
+      "commence_time": "2026-07-06T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Mexico - England",
+      "market": "X",
+      "sharp_odds": 3.12,
+      "soft_odds": 2.57,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782930342.434848,
+      "soft_observed_at": 1782930338.1958861,
+      "sharp_observed_at": 1782930342.432703,
+      "consensus_books": 5,
+      "event_id": "e61a7b471cadc8e3849158ed59d49cab",
+      "commence_time": "2026-07-06T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    },
+    {
+      "match_name": "Mexico - England",
+      "market": "MS2",
+      "sharp_odds": 2.23,
+      "soft_odds": 3.37,
+      "league_name": "FIFA World Cup",
+      "observed_at": 1782930342.434848,
+      "soft_observed_at": 1782930338.195887,
+      "sharp_observed_at": 1782930342.432703,
+      "consensus_books": 5,
+      "event_id": "e61a7b471cadc8e3849158ed59d49cab",
+      "commence_time": "2026-07-06T00:00:00Z",
+      "sport_key": "soccer_fifa_world_cup",
+      "soft_source": "nesine",
+      "feed_phase": "prematch",
+      "match_quality": "ok"
+    }
+  ]
+}

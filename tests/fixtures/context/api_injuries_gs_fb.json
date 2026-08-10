@@ -1,0 +1,12 @@
+{
+  "response": [
+    {
+      "team": {"id": 645, "name": "Galatasaray"},
+      "player": {"id": 1, "name": "Player A", "reason": "Knee Injury", "type": "Missing Fixture"}
+    },
+    {
+      "team": {"id": 611, "name": "Fenerbahce"},
+      "player": {"id": 2, "name": "Player B", "reason": "Suspended", "type": "Missing Fixture"}
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "response": [
+    {
+      "teams": {
+        "home": {"name": "Galatasaray"},
+        "away": {"name": "Fenerbahce"}
+      },
+      "goals": {"home": 2, "away": 1}
+    },
+    {
+      "teams": {
+        "home": {"name": "Fenerbahce"},
+        "away": {"name": "Galatasaray"}
+      },
+      "goals": {"home": 0, "away": 0}
+    }
+  ]
+}
