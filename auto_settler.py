@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 from core import clv_tracker
 from core.settlement_log import append_settlement_cycle_log
+from core.time_utils import parse_utc
 from database.db_manager import (
     get_latest_bakiye,
     get_pending_kupons,
@@ -79,15 +80,7 @@ def _normalize_match_key(match_name: str, market: str) -> tuple[str, str]:
 
 
 def _parse_utc_timestamp(raw_value: str) -> datetime | None:
-    if not isinstance(raw_value, str) or not raw_value.strip():
-        return None
-    try:
-        parsed = datetime.fromisoformat(raw_value.strip())
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        return parsed.replace(tzinfo=timezone.utc)
-    return parsed.astimezone(timezone.utc)
+    return parse_utc(raw_value)
 
 
 def _kupon_age(kupon: dict[str, Any]) -> timedelta | None:

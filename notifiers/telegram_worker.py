@@ -16,6 +16,7 @@ from core.operator_risk_settings import get_action_ev_threshold, get_watch_ev_th
 from core.passion_engine import calculate_expected_value, get_active_min_ev_threshold
 from core.beginner_alert import build_beginner_play_confirmation, build_beginner_settlement_notice, market_code_from_label, build_beginner_settlement_notice
 from core.kasa_sync import refresh_alert_budget_lines
+from core.time_utils import parse_utc
 from database.db_manager import (
     add_kupon,
     get_latest_bakiye,
@@ -1416,15 +1417,9 @@ _last_reminder_sweep_at = 0.0
 
 def _seconds_to_kickoff(commence_time: str | None, *, now: float | None = None) -> float | None:
     """Maca kalan saniye. commence_time bilinmiyor/gecersizse None."""
-    if not isinstance(commence_time, str) or not commence_time.strip():
+    parsed = parse_utc(commence_time)
+    if parsed is None:
         return None
-    raw = commence_time.strip().replace("Z", "+00:00")
-    try:
-        parsed = datetime.fromisoformat(raw)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
     reference = now if now is not None else datetime.now(timezone.utc).timestamp()
     return parsed.timestamp() - reference
 

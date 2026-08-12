@@ -37,6 +37,9 @@ __all__ = (
     "SQE_DB_PATH",
     "resolve_sqe_db_path",
     "HERO_MODE",
+    "PANEL_HOST",
+    "PANEL_PORT",
+    "PANEL_TOKEN",
 )
 
 
@@ -106,6 +109,23 @@ def resolve_sqe_db_path(
 
 
 SQE_DB_PATH: Final[Path] = resolve_sqe_db_path()
+
+# Operator paneli: varsayilan olarak YALNIZ bu bilgisayardan erisilir.
+# Uzaktan erisim icin PANEL_HOST'u Tailscale adresine (veya 0.0.0.0'a) alin ve
+# PANEL_TOKEN tanimlayin; token yoksa panel yerel disina acilmaz.
+PANEL_HOST: Final[str] = os.getenv("PANEL_HOST", "127.0.0.1").strip() or "127.0.0.1"
+PANEL_TOKEN: Final[str] = os.getenv("PANEL_TOKEN", "").strip()
+
+
+def _resolve_panel_port(raw: str) -> int:
+    try:
+        port = int(raw)
+    except ValueError:
+        return 8765
+    return port if 1 <= port <= 65535 else 8765
+
+
+PANEL_PORT: Final[int] = _resolve_panel_port(os.getenv("PANEL_PORT", "8765").strip())
 
 SCAN_INTERVAL_SECONDS: Final[int] = (
     PILOT_SCAN_INTERVAL_SECONDS if PILOT_MODE else LIVE_SCAN_INTERVAL_SECONDS
@@ -187,6 +207,13 @@ def _validate_configuration() -> None:
     enrich_mode = _require_non_empty_str("CONTEXT_ENRICH_MODE", CONTEXT_ENRICH_MODE)
     if enrich_mode not in {"off", "on", "auto"}:
         raise ConfigurationError("CONTEXT_ENRICH_MODE: must be 'off', 'on', or 'auto'")
+    _require_non_empty_str("PANEL_HOST", PANEL_HOST)
+    _require_positive_int("PANEL_PORT", PANEL_PORT)
+    if PANEL_HOST not in {"127.0.0.1", "::1", "localhost"} and len(PANEL_TOKEN) < 16:
+        raise ConfigurationError(
+            "PANEL_TOKEN: PANEL_HOST yerel degilse en az 16 karakterlik bir token gerekir "
+            "(ornek: python -c \"import secrets; print(secrets.token_urlsafe(32))\")"
+        )
 
 
 def _bootstrap() -> None:

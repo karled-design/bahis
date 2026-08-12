@@ -13,6 +13,7 @@ from config.settings import (
     COOLDOWN_ODDS_CHANGE_BYPASS_PCT,
     EXECUTION_BOOK,
     MAX_EV_THRESHOLD,
+    PANEL_PORT,
     SCAN_INTERVAL_SECONDS,
 )
 from core.hero_mode import bootstrap_hero_mode, build_hero_panel_payload, is_hero_mode_enabled
@@ -752,7 +753,7 @@ def main() -> None:
         panel_label = "CANLI MAC + BUTCE TAKIBI"
         print(f"[SQE-V1] Veritabani: {get_db_path()}")
         print(
-            f"[SQE-V1] Nesine paneli ({panel_label}): http://127.0.0.1:8765 | "
+            f"[SQE-V1] Nesine paneli ({panel_label}): http://127.0.0.1:{PANEL_PORT} | "
             f"execution={EXECUTION_BOOK} | kasa={current_kasa:.2f} TL"
         )
         if not is_operator_budget_configured():

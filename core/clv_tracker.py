@@ -17,6 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterator, Optional
 
+from core.time_utils import parse_utc
 from database import db_manager
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -34,18 +35,8 @@ def _normalize_name(name: Any) -> str:
 
 
 def _parse_commence_epoch(value: Any) -> Optional[float]:
-    text = str(value).strip()
-    if not text:
-        return None
-    if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
-    try:
-        dt = datetime.fromisoformat(text)
-    except ValueError:
-        return None
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.timestamp()
+    parsed = parse_utc(str(value))
+    return None if parsed is None else parsed.timestamp()
 
 
 def _observation_epoch(match: dict[str, Any], snapshot_saved_at: float) -> float:

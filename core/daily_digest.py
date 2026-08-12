@@ -19,6 +19,7 @@ from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
 from core.beginner_alert import format_beginner_market_label
+from core.time_utils import parse_utc
 from database.db_manager import (
     get_clv_scorecard,
     get_latest_bakiye,
@@ -58,12 +59,9 @@ def _today_key(now_tr: datetime) -> str:
 
 def _fmt_tr_hhmm(iso_ts: str) -> str:
     """UTC ISO zaman damgasini Turkiye saatiyle 'SS:DD' bicimine cevirir."""
-    try:
-        parsed = datetime.fromisoformat(str(iso_ts).strip())
-    except (TypeError, ValueError):
+    parsed = parse_utc(iso_ts)
+    if parsed is None:
         return "--:--"
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(_TR_TZ).strftime("%H:%M")
 
 

@@ -1,16 +1,27 @@
 from __future__ import annotations
 
+import hmac
+import ipaddress
 import json
 import sqlite3
 import sys
 import threading
 from datetime import datetime, timedelta, timezone
+from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 from zoneinfo import ZoneInfo
 
-from config.settings import EXECUTION_BOOK, PILOT_MODE, VIRTUAL_WALLET
+from config.settings import (
+    EXECUTION_BOOK,
+    PANEL_HOST,
+    PANEL_PORT,
+    PANEL_TOKEN,
+    PILOT_MODE,
+    VIRTUAL_WALLET,
+)
 from core import clv_tracker
 from core.api_credit_ledger import build_credit_panel_payload
 from core.league_discovery import annotate_scan_leagues_payload
@@ -80,8 +91,8 @@ from database.db_manager import (
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent
 _INDEX_PATH = _PROJECT_ROOT / "index.html"
-_WEB_HOST = "0.0.0.0"
-_WEB_PORT = 8765
+_WEB_HOST = PANEL_HOST
+_WEB_PORT = PANEL_PORT
 _MAX_POST_BYTES = 1_000_000
 _STATUS_LOCK = threading.Lock()
 _SERVER: ThreadingHTTPServer | None = None
@@ -91,25 +102,16 @@ _KUPON_API_DIAG = "Donanim Erisilemiyor: Kupon Sonuclandirma API Hatasi"
 _VALID_RESULTS = frozenset({"WON", "LOST"})
 _KUPON_PENDING = "PENDING"
 _LOCALHOST_IPS = frozenset({"127.0.0.1", "::1"})
-_TRUSTED_VPN_IP_PREFIX = "100."
-_IP_PROTECTED_ROUTES = frozenset({
-    "/api/finance_metrics",
-    "/api/update_kasa",
-    "/api/risk_settings",
-    "/api/risk_preset",
-    "/api/experimental_features",
-    "/api/experimental_mode",
-    "/api/scan_leagues",
-    "/api/notify_frequency",
-    "/api/hero_mode",
-    "/api/hero_profile",
-    "/api/reset_tracking",
-    "/api/recalibrate_kasa",
-    "/api/result_kupon",
-    "/api/play_signal",
-    "/api/skip_signal",
-    "/api/set_played_odds",
-})
+# Tailscale adres alanlari: CGNAT blogu ve ULA oneki. Duz onek karsilastirmasi
+# ("100." ile baslayan her adres) Tailscale disi genel IP'leri de guvenilir
+# saydigi icin gercek ag maskesiyle dogrulanir.
+_TRUSTED_VPN_NETWORKS = (
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("fd7a:115c:a1e0::/48"),
+)
+_PANEL_TOKEN_HEADER = "X-Panel-Token"
+_PANEL_TOKEN_COOKIE = "sqe_panel_token"
+_PANEL_TOKEN_MAX_AGE_SECONDS = 30 * 24 * 3600
 
 _DEFAULT_PERFORMANCE: dict[str, Any] = {
     "total_kupon": 0,
@@ -148,11 +150,11 @@ def _emit_operator_diag(detail: str) -> None:
 def _is_trusted_vpn_ip(ip: str) -> bool:
     if not isinstance(ip, str) or not ip.strip():
         return False
-    normalized = ip.strip().casefold()
-    if normalized.startswith(_TRUSTED_VPN_IP_PREFIX):
-        return True
-    # Tailscale IPv6 (ULA fd7a:...)
-    return normalized.startswith("fd7a:")
+    try:
+        address = ipaddress.ip_address(ip.strip().split("%", 1)[0])
+    except ValueError:
+        return False
+    return any(address in network for network in _TRUSTED_VPN_NETWORKS)
 
 
 def _emit_kupon_api_diag(detail: str) -> None:
@@ -340,45 +342,103 @@ class _OperatorPanelHandler(BaseHTTPRequestHandler):
 
     def _is_trusted_client(self) -> bool:
         client_ip = self._client_ip()
-        return client_ip in _LOCALHOST_IPS or _is_trusted_vpn_ip(client_ip)
+        if client_ip in _LOCALHOST_IPS:
+            return True
+        return _is_trusted_vpn_ip(client_ip) and self._has_valid_panel_token()
+
+    def _query_panel_token(self) -> str:
+        query = self.path.split("?", 1)[1] if "?" in self.path else ""
+        return parse_qs(query).get("token", [""])[0].strip()
+
+    def _presented_panel_token(self) -> str:
+        header_value = self.headers.get(_PANEL_TOKEN_HEADER)
+        if isinstance(header_value, str) and header_value.strip():
+            return header_value.strip()
+
+        query_token = self._query_panel_token()
+        if query_token:
+            return query_token
+
+        cookie_header = self.headers.get("Cookie")
+        if isinstance(cookie_header, str) and cookie_header.strip():
+            jar = SimpleCookie()
+            try:
+                jar.load(cookie_header)
+            except CookieError:
+                return ""
+            morsel = jar.get(_PANEL_TOKEN_COOKIE)
+            if morsel is not None:
+                return morsel.value.strip()
+        return ""
+
+    def _has_valid_panel_token(self) -> bool:
+        if not PANEL_TOKEN:
+            return False
+        return hmac.compare_digest(self._presented_panel_token(), PANEL_TOKEN)
+
+    def _panel_token_cookie_headers(self) -> tuple[tuple[str, str], ...]:
+        """Adres cubuguna ?token=... yazan uzak istemciye cerez birakir.
+
+        Boylece panelin sonraki `fetch` cagrilari token tasimak zorunda kalmaz;
+        `index.html` degistirilmeden uzaktan erisim calisir.
+        """
+        if not self._query_panel_token() or not self._has_valid_panel_token():
+            return ()
+        return (
+            (
+                "Set-Cookie",
+                f"{_PANEL_TOKEN_COOKIE}={PANEL_TOKEN}; Path=/; HttpOnly; SameSite=Strict; "
+                f"Max-Age={_PANEL_TOKEN_MAX_AGE_SECONDS}",
+            ),
+        )
 
     def _apply_cors_if_needed(self) -> None:
         origin = self.headers.get("Origin")
-        if not isinstance(origin, str) or not origin:
+        if not isinstance(origin, str) or not origin.strip():
             return
-        if origin.startswith("http://100.") or origin.startswith("https://100."):
-            self.send_header("Access-Control-Allow-Origin", origin)
-            self.send_header("Vary", "Origin")
-            return
-        if origin.casefold().startswith("http://[fd7a:") or origin.casefold().startswith("https://[fd7a:"):
-            self.send_header("Access-Control-Allow-Origin", origin)
+        hostname = urlsplit(origin.strip()).hostname or ""
+        if hostname in _LOCALHOST_IPS or _is_trusted_vpn_ip(hostname):
+            self.send_header("Access-Control-Allow-Origin", origin.strip())
             self.send_header("Vary", "Origin")
 
-    def _enforce_ip_policy(self, route: str) -> bool:
-        if route not in _IP_PROTECTED_ROUTES:
-            return True
+    def _enforce_access_policy(self, route: str) -> bool:
+        """Panelin TUM uclari yetki ister: yerel istemci ya da gecerli token."""
         client_ip = self._client_ip()
-        if client_ip in _LOCALHOST_IPS or _is_trusted_vpn_ip(client_ip) or is_ip_authorized(client_ip):
+        if client_ip in _LOCALHOST_IPS:
             return True
-        _emit_operator_diag(f"Teşhis: Yetkisiz Terminal Erişimi - IP: {client_ip}")
+        if self._has_valid_panel_token() and (
+            _is_trusted_vpn_ip(client_ip) or is_ip_authorized(client_ip)
+        ):
+            return True
+        _emit_operator_diag(f"Teşhis: Yetkisiz Terminal Erişimi - {route} - IP: {client_ip}")
         self._send_json(
             403,
             {
                 "ok": False,
                 "error": "forbidden",
                 "detail": (
-                    "Bu islem icin IP yetkisi gerekir. Ayni bilgisayardan "
-                    "http://127.0.0.1:8765 acin veya yetkili IP ekleyin."
+                    f"Bu islem icin yetki gerekir. Ayni bilgisayardan "
+                    f"http://127.0.0.1:{_WEB_PORT} acin veya PANEL_TOKEN ile baglanin "
+                    f"(ornek: http://<tailscale-adresi>:{_WEB_PORT}/?token=...)."
                 ),
             },
         )
         return False
 
-    def _send_bytes(self, status_code: int, content_type: str, payload: bytes) -> None:
+    def _send_bytes(
+        self,
+        status_code: int,
+        content_type: str,
+        payload: bytes,
+        *,
+        extra_headers: tuple[tuple[str, str], ...] = (),
+    ) -> None:
         self.send_response(status_code)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("Cache-Control", "no-store")
+        for header_name, header_value in extra_headers:
+            self.send_header(header_name, header_value)
         self._apply_cors_if_needed()
         self.end_headers()
         self.wfile.write(payload)
@@ -424,7 +484,7 @@ class _OperatorPanelHandler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         route = self.path.split("?", 1)[0]
-        if not self._enforce_ip_policy(route):
+        if not self._enforce_access_policy(route):
             return
 
         if route in {"/", "/index.html"}:
@@ -433,7 +493,12 @@ class _OperatorPanelHandler(BaseHTTPRequestHandler):
                     self._send_bytes(404, "text/plain; charset=utf-8", b"index.html not found")
                     return
                 content = _INDEX_PATH.read_bytes()
-                self._send_bytes(200, "text/html; charset=utf-8", content)
+                self._send_bytes(
+                    200,
+                    "text/html; charset=utf-8",
+                    content,
+                    extra_headers=self._panel_token_cookie_headers(),
+                )
             except OSError as exc:
                 _emit_operator_diag(f"index read failed | {exc}")
                 self._send_bytes(500, "text/plain; charset=utf-8", b"index read error")
@@ -501,7 +566,7 @@ class _OperatorPanelHandler(BaseHTTPRequestHandler):
             self._send_json(200, {"ok": True, "ip": normalized_ip})
             return
 
-        if not self._enforce_ip_policy(route):
+        if not self._enforce_access_policy(route):
             return
 
         if route == "/api/toggle_scan":
