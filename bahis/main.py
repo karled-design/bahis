@@ -65,7 +65,7 @@ from core.match_filters import (
     is_virtual_match_text,
     reset_scan_cycle,
 )
-from core.passion_engine import calculate_expected_value, get_active_min_ev_threshold
+from core.passion_engine import get_active_min_ev_threshold, resolve_match_ev
 from core.scan_pipeline import ScanCandidate, evaluate_matches
 from core.market_catalog import FAMILY_FIRST_HALF, market_family
 from core.first_half_shadow import record_first_half_shadow
@@ -125,6 +125,7 @@ class _ScanCycleStats(TypedDict):
     context_filter: int
     experimental_checked: int
     experimental_would_filter: int
+    zayif_referans: int
     context_bundle: int
     context_api_req: int
     watch: int
@@ -158,6 +159,7 @@ def _new_scan_cycle_stats() -> _ScanCycleStats:
         "context_filter": 0,
         "experimental_checked": 0,
         "experimental_would_filter": 0,
+        "zayif_referans": 0,
         "context_bundle": 0,
         "context_api_req": 0,
         "watch": 0,
@@ -188,6 +190,7 @@ def _format_scan_cycle_summary(stats: _ScanCycleStats) -> str:
         f"absurd_ev={stats['absurd_ev']} | suspicious_match={stats['suspicious_match']} | "
         f"context_filter={stats['context_filter']} | "
         f"experimental_would_filter={stats.get('experimental_would_filter', 0)} | "
+        f"zayif_referans={stats.get('zayif_referans', 0)} | "
         f"context_bundle={stats['context_bundle']} | context_api_req={stats['context_api_req']} | "
         f"watch={stats['watch']} | "
         f"action={stats['action']} | high={stats['high']} | "
@@ -415,6 +418,7 @@ def _dispatch_scan_notifications(
             commence_time=str(match_record.get("commence_time", "")).strip() or None,
             cycle_id=cycle_id,
             notify_key=notify_key,
+            ev=candidate["ev"],
         )
         if sent:
             notified_registry[notify_key] = {
@@ -573,7 +577,7 @@ def _build_ui_matches(matches: list) -> list[dict[str, str | float]]:
                 "market": str(match["market"]),
                 "sharp_odds": sharp_odds,
                 "soft_odds": soft_odds,
-                "ev": calculate_expected_value(sharp_odds, soft_odds),
+                "ev": resolve_match_ev(match, sharp_odds, soft_odds),
                 "has_context": bool(match.get("context_bundle")),
             }
         )
@@ -899,6 +903,7 @@ def main() -> None:
                 "context_filter",
                 "experimental_checked",
                 "experimental_would_filter",
+                "zayif_referans",
                 "watch",
                 "action",
                 "high",

@@ -399,6 +399,7 @@ def _cache_alert_context(
     event_id: str | None = None,
     commence_time: str | None = None,
     stake: float | None = None,
+    ev: float | None = None,
 ) -> None:
     safe_id = _normalize_match_id(match_id)
     parsed = _parse_alert_message(message_text)
@@ -426,8 +427,27 @@ def _cache_alert_context(
                 commence_time.strip() if isinstance(commence_time, str) else ""
             ),
             "stake": stake_value,
+            # Kararin verildigi andaki EV (motorun hesabi). Mesajdan yeniden
+            # turetmek yerine burada saklanir; kupon kaydi motorla ayni sayiyi
+            # gorur.
+            "ev_at_alert": (
+                float(ev)
+                if ev is not None and not isinstance(ev, bool) and isinstance(ev, (int, float))
+                else None
+            ),
             "cached_at": time.time(),
         }
+
+
+def _context_ev(context: dict[str, Any]) -> float:
+    """Kupon icin EV: onbellekte motorun degeri varsa o, yoksa oranlardan hesap."""
+    cached = context.get("ev_at_alert")
+    if not isinstance(cached, bool) and isinstance(cached, (int, float)):
+        return float(cached)
+    return calculate_expected_value(
+        float(context["sharp_oran"]),
+        float(context["soft_oran"]),
+    )
 
 
 def _get_alert_context(match_id: str, message_text: str) -> dict[str, Any]:
@@ -671,10 +691,7 @@ def _handle_play_callback(callback: dict[str, Any], callback_data: str) -> bool:
             stake=stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -816,10 +833,7 @@ def play_recommendation_from_panel(
             stake=resolved_stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -1469,10 +1483,7 @@ def _auto_record_play_in_test(match_id: str, stake: float, message_text: str) ->
             stake=stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -1515,6 +1526,7 @@ def send_alert(
     cycle_id: str | None = None,
     notify_key: str | None = None,
     bypass_scan_gate: bool = False,
+    ev: float | None = None,
 ) -> bool:
     if not isinstance(message, str):
         _emit_operator_diag("message must be a string")
@@ -1591,6 +1603,7 @@ def send_alert(
             event_id=event_id,
             commence_time=commence_time,
             stake=normalized_stake,
+            ev=ev,
         )
         # TEST modu: operator dokunmadan sanal kuponu otomatik kaydet.
         # Gercek modda (PILOT_MODE=False) bu satir calismaz; kayit yine
