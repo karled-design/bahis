@@ -92,6 +92,7 @@ class UnifiedMetadataMergeTests(unittest.TestCase):
                 "sharp_odds": 2.10,
                 "observed_at": now,
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
                 "event_id": "abc123event",
                 "commence_time": "2026-06-19T15:00:00Z",
                 "sport_key": "soccer_epl",
@@ -158,6 +159,7 @@ class SuspiciousMatchQualityTests(unittest.TestCase):
                 "soft_odds": 11.9,
                 "match_quality": "suspicious",
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": "Good Match - Pair",
@@ -166,6 +168,7 @@ class SuspiciousMatchQualityTests(unittest.TestCase):
                 "soft_odds": 2.06,
                 "match_quality": "ok",
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
             },
         ]
         candidates, stats = evaluate_matches(matches, current_kasa=1000.0, skip_freshness=True)

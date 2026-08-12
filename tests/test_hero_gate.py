@@ -51,6 +51,7 @@ class HeroGateTests(unittest.TestCase):
                 "sharp_odds": 1.60,
                 "soft_odds": 1.85,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
                 "context_bundle": {
                     "standings": payload["standings"],
                     "home_form": payload["home_form"],
@@ -75,6 +76,7 @@ class HeroGateTests(unittest.TestCase):
                 "sharp_odds": 3.50,
                 "soft_odds": 3.40,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": match["match_name"],
@@ -82,6 +84,7 @@ class HeroGateTests(unittest.TestCase):
                 "sharp_odds": 5.00,
                 "soft_odds": 4.80,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
         ]
         prob_index = build_market_prob_index(matches)
@@ -106,6 +109,7 @@ class HeroGateTests(unittest.TestCase):
             "sharp_odds": 1.58,
             "soft_odds": 1.80,
             "consensus_books": 3,
+            "consensus_source": "pinnacle",
         }
         prob_index = build_market_prob_index([match, rival])
         decision = evaluate_hero_gate(match, prob_index, self._profile())
@@ -138,6 +142,7 @@ class HeroGateTests(unittest.TestCase):
                 "sharp_odds": 4.50,
                 "soft_odds": 4.20,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
         ]
         prob_index = build_market_prob_index(matches)
@@ -154,6 +159,7 @@ class HeroPipelineTests(unittest.TestCase):
                 "sharp_odds": 1.55,
                 "soft_odds": 1.70,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": "Hero A - Hero B",
@@ -161,6 +167,7 @@ class HeroPipelineTests(unittest.TestCase):
                 "sharp_odds": 4.50,
                 "soft_odds": 4.20,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": "Hero C - Hero D",
@@ -168,6 +175,7 @@ class HeroPipelineTests(unittest.TestCase):
                 "sharp_odds": 2.40,
                 "soft_odds": 2.35,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
         ]
         with mock.patch("core.scan_pipeline.is_hero_mode_enabled", return_value=True):
@@ -192,6 +200,7 @@ class HeroPipelineTests(unittest.TestCase):
                 "sharp_odds": 2.0,
                 "soft_odds": 2.06,
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
             },
         ]
         with mock.patch("core.scan_pipeline.is_hero_mode_enabled", return_value=False):

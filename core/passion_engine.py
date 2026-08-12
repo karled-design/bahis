@@ -8,6 +8,7 @@ from core.operator_risk_settings import get_action_ev_threshold, get_watch_ev_th
 __all__ = (
     "calculate_expected_value",
     "calculate_expected_value_from_probability",
+    "resolve_match_ev",
     "classify_ev_tier",
     "get_active_min_ev_threshold",
     "is_advantageous",
@@ -65,6 +66,22 @@ def calculate_expected_value_from_probability(true_probability: float, soft_odds
         return 0.0
     ev = (prob * float(soft_odds)) - 1.0
     return ev if math.isfinite(ev) else 0.0
+
+
+def resolve_match_ev(match: dict[str, object], sharp_odds: float, soft_odds: float) -> float:
+    """Tek EV kaynagi: marji temizlenmis olasilik varsa onu, yoksa ham 1/oran.
+
+    Motor ve panel AYNI bu fonksiyonu cagirir; boylece ekranda gordugun yuzde
+    ile esigi gecen yuzde ayni sey olur.
+    """
+    fair_probability = match.get("fair_probability") if isinstance(match, dict) else None
+    if (
+        not isinstance(fair_probability, bool)
+        and isinstance(fair_probability, (int, float))
+        and 0.0 < float(fair_probability) < 1.0
+    ):
+        return calculate_expected_value_from_probability(float(fair_probability), soft_odds)
+    return calculate_expected_value(sharp_odds, soft_odds)
 
 
 def classify_ev_tier(
