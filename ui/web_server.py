@@ -47,6 +47,11 @@ from core.live_alert_settings import (
     is_live_alerts_enabled,
     set_live_alerts_enabled,
 )
+from core.measurement_mode import (
+    is_measurement_mode_enabled,
+    report as measurement_report,
+    set_measurement_mode,
+)
 from core.strategy_settings import (
     get_strategy_panel_payload,
     is_side_markets_effective,
@@ -273,6 +278,11 @@ def _build_status_payload() -> dict[str, Any]:
     payload["pilot_ab"] = get_pilot_ab_summary()
     payload["today_notifications"] = _count_today_notifications()
     payload["live_alerts_enabled"] = is_live_alerts_enabled()
+    measuring = is_measurement_mode_enabled()
+    payload["measurement_mode"] = measuring
+    # Karne yalnizca mod acikken okunur: kapali iken her durum sorgusunda
+    # defteri taramanin anlami yok.
+    payload["measurement_report"] = measurement_report()["toplam"] if measuring else None
     payload["api_credits"] = build_credit_panel_payload()
     payload["strategy"] = get_strategy_panel_payload()
     return payload
@@ -585,6 +595,18 @@ class _OperatorPanelHandler(BaseHTTPRequestHandler):
             except (TypeError, ValueError, OSError) as exc:
                 _emit_kupon_api_diag(f"toggle_live_alerts failed | {exc}")
                 self._send_json(500, {"ok": False, "error": "toggle_live_alerts failed"})
+            return
+
+        if route == "/api/toggle_measurement_mode":
+            try:
+                new_state = not is_measurement_mode_enabled()
+                if not set_measurement_mode(new_state):
+                    self._send_json(500, {"ok": False, "error": "measurement mode write failed"})
+                    return
+                self._send_json(200, {"ok": True, "measurement_mode": new_state})
+            except (TypeError, ValueError, OSError) as exc:
+                _emit_kupon_api_diag(f"toggle_measurement_mode failed | {exc}")
+                self._send_json(500, {"ok": False, "error": "toggle_measurement_mode failed"})
             return
 
         if route == "/api/toggle_side_markets":

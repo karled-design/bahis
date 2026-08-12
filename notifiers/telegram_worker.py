@@ -612,6 +612,19 @@ def _is_duplicate_play(context: dict[str, Any]) -> bool:
 
 
 def _handle_play_callback(callback: dict[str, Any], callback_data: str) -> bool:
+    from core.measurement_mode import is_measurement_mode_enabled
+
+    # Olcum modunda para hareketi yok. Yeni mesajlarda dugme zaten cikmaz;
+    # bu kontrol mod acilmadan once gonderilmis eski mesajlar icin emniyet kemeri.
+    if is_measurement_mode_enabled():
+        _emit_kupon_diag(f"olcum modu | kupon engellendi | {callback_data}")
+        _send_operator_notice(
+            "Olcum modu acik: sinyaller kaydediliyor ama kupon acilmiyor. "
+            "Oynamak icin olcum modunu kapatin."
+        )
+        _clear_inline_buttons(callback)
+        return False
+
     parsed = _parse_play_callback(callback_data)
     if parsed is None:
         _emit_kupon_diag(f"invalid play callback | {callback_data}")
