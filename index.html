@@ -3691,6 +3691,13 @@
             </div>
             <button type="button" class="live-toggle-btn" id="liveToggleBtn" aria-pressed="true">Acik</button>
           </section>
+          <section class="live-toggle" id="measurementToggle" aria-live="polite" aria-label="Olcum modu">
+            <div class="live-toggle-main">
+              <span class="live-toggle-title">Olcum modu (para riski yok)</span>
+              <span class="live-toggle-sub" id="measurementToggleSub">Durum okunuyor…</span>
+            </div>
+            <button type="button" class="live-toggle-btn" id="measurementToggleBtn" aria-pressed="false">Kapali</button>
+          </section>
           <section class="settings-zone settings-zone-control" aria-label="Ayarlar">
             <section class="risk-panel" id="riskPanel">
 
@@ -4112,6 +4119,17 @@
         liveToggleBtn.addEventListener("click", function (event) {
           event.preventDefault();
           toggleLiveAlerts();
+        });
+      }
+      var measurementToggleBtn = document.getElementById("measurementToggleBtn");
+      var measurementToggleSub = document.getElementById("measurementToggleSub");
+      var measurementBusy = false;
+      var MEASUREMENT_OFF_SUB =
+        "Kapali — bildirimlerde Oyna dugmesi cikar, kupon acilir.";
+      if (measurementToggleBtn) {
+        measurementToggleBtn.addEventListener("click", function (event) {
+          event.preventDefault();
+          toggleMeasurementMode();
         });
       }
       var overviewSnapshotProfile = document.getElementById("overviewSnapshotProfile");
@@ -6307,6 +6325,64 @@
         applyLiveToggleVisual(enabled);
       }
 
+      function measurementSubText(enabled, card) {
+        if (!enabled) return MEASUREMENT_OFF_SUB;
+        var text =
+          "Acik — sinyaller Telegram'a gelir ve kaydedilir, kupon acilmaz, bakiye degismez.";
+        if (card && Number(card.sinyal) > 0) {
+          text +=
+            " Simdiye kadar: " +
+            card.sinyal +
+            " sinyal, " +
+            card.olculen +
+            " olculdu, ortalama CLV %" +
+            card.ort_clv_pct +
+            ".";
+        }
+        return text;
+      }
+
+      function applyMeasurementVisual(enabled, card) {
+        if (!measurementToggleBtn) return;
+        measurementToggleBtn.classList.toggle("on", enabled);
+        measurementToggleBtn.classList.toggle("off", !enabled);
+        measurementToggleBtn.textContent = enabled ? "Acik" : "Kapali";
+        measurementToggleBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
+        if (measurementToggleSub) {
+          measurementToggleSub.textContent = measurementSubText(enabled, card);
+        }
+      }
+
+      function renderMeasurementToggle(data) {
+        applyMeasurementVisual(data.measurement_mode === true, data.measurement_report);
+      }
+
+      function toggleMeasurementMode() {
+        if (measurementBusy || !measurementToggleBtn) return;
+        var previousEnabled = measurementToggleBtn.classList.contains("on");
+        measurementBusy = true;
+        applyMeasurementVisual(!previousEnabled, null);
+
+        postJson("/api/toggle_measurement_mode", {})
+          .then(function (result) {
+            var enabled = result && result.measurement_mode === true;
+            applyMeasurementVisual(enabled, null);
+            showToast(
+              enabled
+                ? "Olcum modu acildi — kupon acilmaz, sinyaller kaydedilir"
+                : "Olcum modu kapatildi — normal calisma"
+            );
+            fetchStatus();
+          })
+          .catch(function (err) {
+            applyMeasurementVisual(previousEnabled, null);
+            showToast("Olcum modu degismedi: " + (err.message || "baglanti"));
+          })
+          .finally(function () {
+            measurementBusy = false;
+          });
+      }
+
       var sideMarketsBusy = false;
       var strategyCardSideToggle = document.getElementById("strategyCardSideToggle");
       var strategyCardSideFrozen = document.getElementById("strategyCardSideFrozen");
@@ -6424,6 +6500,7 @@
         syncShutter(scanEnabled === true);
         renderStatusStrip(data);
         renderLiveToggle(data);
+        renderMeasurementToggle(data);
         renderStrategyCard(data);
 
         setLiveState(scanEnabled === true || data.is_live === true);
