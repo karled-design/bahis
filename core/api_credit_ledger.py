@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from config.settings import ODDS_API_KEY
+from config.settings import ODDS_API_KEY, ODDS_API_REGIONS
 
 __all__ = (
     "build_credit_panel_payload",
@@ -33,9 +33,10 @@ _MAX_DAYS_KEPT = 90
 # Gunluk tavan (Adim 3): kalan kredi bilinmiyorsa (yeni anahtar/ilk gun) bu
 # taban kullanilir; bilindiginde tavan = kalan // ayin kalan gunu olur.
 _DAILY_ALLOWANCE_FALLBACK = 16
-# Tek oran sorgusunun tahmini bedeli (2 bolge x 2 pazar). Gercek bedel her
-# cevapta x-requests-last ile olculur; bu sabit yalnizca on-kontrol icindir.
-_ODDS_FETCH_COST_ESTIMATE = 4
+# Tek oran sorgusunun tahmini bedeli: bolge sayisi x 2 pazar (h2h,totals).
+# Gercek bedel her cevapta x-requests-last ile olculur; bu deger yalnizca
+# on-kontrol icindir.
+_ODDS_FETCH_COST_ESTIMATE = 2 * max(1, len([part for part in ODDS_API_REGIONS.split(",") if part]))
 
 
 def _current_key_tail() -> str:

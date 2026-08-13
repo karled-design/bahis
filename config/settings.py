@@ -16,6 +16,7 @@ __all__ = (
     "TELEGRAM_TOKEN",
     "TELEGRAM_CHAT_ID",
     "ODDS_API_KEY",
+    "ODDS_API_REGIONS",
     "TOTAL_KASA",
     "RISK_PER_TRADE",
     "MIN_VALUE_THRESHOLD",
@@ -50,6 +51,9 @@ class ConfigurationError(RuntimeError):
 TELEGRAM_TOKEN: Final[str] = os.getenv("TELEGRAM_TOKEN", "").strip()
 TELEGRAM_CHAT_ID: Final[str] = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 ODDS_API_KEY: Final[str] = os.getenv("ODDS_API_KEY", "").strip()
+# Ana bulten cagrisinin bolgeleri. Maliyet = bolge x pazar; Pinnacle ve borsalar
+# "eu" icinde oldugu icin varsayilan tek bolgedir (tarama basina 4 -> 2 kredi).
+ODDS_API_REGIONS: Final[str] = os.getenv("ODDS_API_REGIONS", "eu").strip().casefold() or "eu"
 
 TOTAL_KASA: Final[float] = 20000.0  # Başlangıç Operatör Sermayesi (TL)
 RISK_PER_TRADE: Final[float] = 0.02  # Maç başı taban kasa riski (varsayılan %2). Canlı değer aktif bildirim profilinden gelir. Tutar artık YARIM-KELLY ile hesaplanır (core/clv_engine.py); bu oran maç başı üst sınırı verir (en fazla 2×). Oran bilinmezse eski formüle düşülür.
@@ -172,6 +176,14 @@ def _validate_configuration() -> None:
 
     _require_non_empty_str("TELEGRAM_CHAT_ID", TELEGRAM_CHAT_ID)
     _require_non_empty_str("ODDS_API_KEY", ODDS_API_KEY)
+    regions = _require_non_empty_str("ODDS_API_REGIONS", ODDS_API_REGIONS)
+    allowed_regions = {"eu", "uk", "us", "us2", "au"}
+    unknown = sorted(set(regions.split(",")) - allowed_regions)
+    if unknown:
+        raise ConfigurationError(
+            f"ODDS_API_REGIONS: unknown region(s) {','.join(unknown)}; "
+            f"allowed: {','.join(sorted(allowed_regions))}"
+        )
     _require_positive_float("TOTAL_KASA", TOTAL_KASA)
     _require_open_unit_interval("RISK_PER_TRADE", RISK_PER_TRADE)
     _require_open_unit_interval("MIN_VALUE_THRESHOLD", MIN_VALUE_THRESHOLD)

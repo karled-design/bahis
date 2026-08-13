@@ -12,6 +12,7 @@ from typing import Any
 from config.settings import (
     MIN_CONSENSUS_BOOKMAKERS,
     ODDS_API_KEY,
+    ODDS_API_REGIONS,
     SOFT_MARKET_LAG_TIMEOUT,
 )
 from core.market_catalog import (
@@ -197,7 +198,7 @@ def _build_consensus_feed_url(sport_key: str) -> str | None:
         _emit_operator_diag("sport_key gecersiz")
         return None
     query = urllib.parse.urlencode(
-        {"apiKey": ODDS_API_KEY, "regions": "uk,eu", "markets": "h2h,totals"}
+        {"apiKey": ODDS_API_KEY, "regions": ODDS_API_REGIONS, "markets": "h2h,totals"}
     )
     return f"{_ODDS_API_ODDS_TEMPLATE.format(sport_key=sport_key.strip())}?{query}"
 
