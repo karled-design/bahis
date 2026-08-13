@@ -12,12 +12,24 @@ from typing import Any
 from config.settings import (
     MIN_CONSENSUS_BOOKMAKERS,
     ODDS_API_KEY,
+    ODDS_API_REGIONS,
     SOFT_MARKET_LAG_TIMEOUT,
 )
 from core.market_catalog import (
     family_outcome_count,
     market_family_group_key,
     totals_market_key,
+)
+from core.devig import fair_probabilities
+from core.price_reference import (
+    EXCHANGE_BOOKMAKERS,
+    PINNACLE_KEY,
+    REFERENCE_EXCHANGE,
+    REFERENCE_MARKET,
+    REFERENCE_PINNACLE,
+    REFERENCE_SECONDARY,
+    SECONDARY_SHARP_BOOKMAKERS,
+    probability_space_mean_odds,
 )
 from core.scan_league_settings import (
     SHARP_LEAGUE_CATALOG,
@@ -58,7 +70,9 @@ _SUPPORTED_API_MARKETS = frozenset({"h2h", "totals", "btts", "h2h_h1"})
 # disindaysa veri suphelidir, marj temizligi uygulanmaz (ham 1/oran kalir).
 _DEVIG_MIN_OVERROUND = 1.0
 _DEVIG_MAX_OVERROUND = 1.30
-# Odds API bookmaker keys — sharp / exchange referans (Nesine karsilastirmasi icin)
+# Canli referans kalitesi core/price_reference.py'de tanimli (Pinnacle > borsa >
+# ikincil kitapci > piyasa). Asagidaki kume artik yalnizca GOLGE defterinin
+# "keskin sayilan" kolonu icin durur; degistirilirse gecmis kiyas bozulur.
 _SHARP_BOOKMAKER_KEYS = frozenset(
     {
         "pinnacle",
@@ -184,7 +198,7 @@ def _build_consensus_feed_url(sport_key: str) -> str | None:
         _emit_operator_diag("sport_key gecersiz")
         return None
     query = urllib.parse.urlencode(
-        {"apiKey": ODDS_API_KEY, "regions": "uk,eu", "markets": "h2h,totals"}
+        {"apiKey": ODDS_API_KEY, "regions": ODDS_API_REGIONS, "markets": "h2h,totals"}
     )
     return f"{_ODDS_API_ODDS_TEMPLATE.format(sport_key=sport_key.strip())}?{query}"
 
@@ -637,13 +651,54 @@ def _collect_price_buckets(
                         continue
                     bucket_key = f"{event_key}:{market_label}"
                     if bucket_key not in price_buckets:
-                        price_buckets[bucket_key] = {"all": [], "sharp": []}
+                        price_buckets[bucket_key] = {"all": [], "sharp": [], "books": {}}
                     bucket = price_buckets[bucket_key]
                     bucket["all"].append(price)
                     if is_sharp_book:
                         bucket["sharp"].append(price)
+                    # Kitapci-bazli fiyat: referans kalitesi (Pinnacle / borsa /
+                    # ikincil) ancak boyle ayirt edilebilir.
+                    bucket["books"][book_key] = price
 
     return price_buckets, match_names, event_meta
+
+
+def _resolve_reference_price(
+    bucket: dict[str, Any],
+    *,
+    min_books: int,
+) -> tuple[float, str, int] | None:
+    """Referans fiyati kalite sirasina gore secer: Pinnacle > borsa > ikincil > piyasa.
+
+    Ortalama gereken durumlarda fiyatlar OLASILIK uzayinda ortalanir; oran
+    uzayinda ortalama ortuk sansi sistematik olarak asagi ceker.
+    """
+    books: dict[str, float] = dict(bucket.get("books") or {})
+
+    pinnacle_price = books.get(PINNACLE_KEY)
+    if isinstance(pinnacle_price, (int, float)) and float(pinnacle_price) > 1.0:
+        return float(pinnacle_price), REFERENCE_PINNACLE, 1
+
+    exchange_prices = [price for key, price in books.items() if key in EXCHANGE_BOOKMAKERS]
+    if len(exchange_prices) >= min_books:
+        odds = probability_space_mean_odds(exchange_prices)
+        if odds is not None:
+            return odds, REFERENCE_EXCHANGE, len(exchange_prices)
+
+    secondary_prices = [
+        price for key, price in books.items() if key in SECONDARY_SHARP_BOOKMAKERS
+    ]
+    if len(secondary_prices) >= min_books:
+        odds = probability_space_mean_odds(secondary_prices)
+        if odds is not None:
+            return odds, REFERENCE_SECONDARY, len(secondary_prices)
+
+    all_prices: list[float] = list(bucket.get("all") or [])
+    if len(all_prices) >= min_books:
+        odds = probability_space_mean_odds(all_prices)
+        if odds is not None:
+            return odds, REFERENCE_MARKET, len(all_prices)
+    return None
 
 
 def _parse_consensus_feed(
@@ -663,15 +718,12 @@ def _parse_consensus_feed(
         if not match_name:
             continue
 
-        sharp_prices: list[float] = list(bucket.get("sharp") or [])
-        all_prices: list[float] = list(bucket.get("all") or [])
-        prices = sharp_prices if len(sharp_prices) >= min_books else all_prices
-        source = "sharp_consensus" if len(sharp_prices) >= min_books else "market_consensus"
-        if len(prices) < min_books:
+        resolved = _resolve_reference_price(bucket, min_books=min_books)
+        if resolved is None:
             continue
+        consensus_odds, source, book_count = resolved
 
-        consensus_odds = round(sum(prices) / len(prices), 2)
-        parsed_odds = _is_valid_sharp_odds(consensus_odds)
+        parsed_odds = _is_valid_sharp_odds(round(consensus_odds, 4))
         if parsed_odds is None:
             continue
 
@@ -680,7 +732,7 @@ def _parse_consensus_feed(
             "match_name": match_name,
             "market": market_label,
             "sharp_odds": parsed_odds,
-            "consensus_books": len(prices),
+            "consensus_books": book_count,
             "consensus_source": source,
             "event_id": meta.get("event_id", event_key),
             "commence_time": meta.get("commence_time", ""),
@@ -697,8 +749,8 @@ def _attach_fair_probabilities(normalized: dict[str, dict[str, str | float]]) ->
     """Kitapci kar payini (marj) cikarip her kayda fair_probability ekler.
 
     Ayni macin ayni pazar ailesindeki TUM sonuclar (MS1+X+MS2 veya ALT+UST)
-    konsensuste mevcutsa: fair = (1/oran) / (1/oran toplami). Eksik sonuc veya
-    band disi toplam varsa dokunulmaz; tuketici ham 1/oran'a duser.
+    konsensuste mevcutsa marj Shin yontemiyle cikarilir (core/devig.py). Eksik
+    sonuc veya band disi toplam varsa dokunulmaz; tuketici ham 1/oran'a duser.
     """
     groups: dict[tuple[str, str], list[str]] = {}
     for bucket_key, entry in normalized.items():
@@ -728,8 +780,12 @@ def _attach_fair_probabilities(normalized: dict[str, dict[str, str | float]]) ->
         if not (_DEVIG_MIN_OVERROUND < overround <= _DEVIG_MAX_OVERROUND):
             continue
 
-        for bucket_key, raw_prob in zip(bucket_keys, implied):
-            normalized[bucket_key]["fair_probability"] = round(raw_prob / overround, 6)
+        probabilities = fair_probabilities([1.0 / value for value in implied])
+        if probabilities is None or len(probabilities) != len(bucket_keys):
+            continue
+
+        for bucket_key, fair_prob in zip(bucket_keys, probabilities):
+            normalized[bucket_key]["fair_probability"] = round(fair_prob, 6)
             normalized[bucket_key]["market_overround"] = round(overround, 4)
 
 

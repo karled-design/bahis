@@ -7,3 +7,17 @@ database/settlement_log.jsonl
 *.db-journal
 *.db-wal
 *.db-shm
+
+# İşletim sistemi / editör artıkları
+.DS_Store
+
+# Motorun ürettiği çalışma zamanı verisi (kod değil): depoya girmez.
+database/*.json
+database/*.jsonl
+database/*.db.backup-*
+database/feed_snapshots/
+database/backups/
+
+# Elle alınan yedekler: sürüm geçmişi git'te tutulur, klasör depoya girmez.
+yedekler/
+*.yedek_*

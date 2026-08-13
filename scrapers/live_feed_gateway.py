@@ -111,6 +111,7 @@ class UnifiedMatchFeed(TypedDict, total=False):
     soft_observed_at: float
     sharp_observed_at: float
     consensus_books: int
+    consensus_source: str
     event_id: str
     commence_time: str
     sport_key: str
@@ -319,7 +320,16 @@ def _build_unified_match(
         "consensus_books": int(packet.get("consensus_books", 0) or 0),
     }
 
-    for key in ("event_id", "commence_time", "sport_key", "soft_source", "feed_phase"):
+    for key in (
+        "event_id",
+        "commence_time",
+        "sport_key",
+        "soft_source",
+        "feed_phase",
+        # Referans kalitesi (pinnacle / exchange / ikincil / piyasa): karar
+        # katmani bu etikete gore yetki verir, tasinmasi zorunlu.
+        "consensus_source",
+    ):
         value = packet.get(key)
         if isinstance(value, str) and value.strip():
             unified[key] = value.strip()

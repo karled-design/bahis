@@ -47,6 +47,7 @@ class ScanPipelineTests(unittest.TestCase):
                 "sharp_odds": 2.0,
                 "soft_odds": 2.04,
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": "Test C - Test D",
@@ -54,6 +55,7 @@ class ScanPipelineTests(unittest.TestCase):
                 "sharp_odds": 2.0,
                 "soft_odds": 2.06,
                 "consensus_books": 2,
+                "consensus_source": "pinnacle",
             },
             {
                 "match_name": "Test E - Test F",
@@ -61,6 +63,7 @@ class ScanPipelineTests(unittest.TestCase):
                 "sharp_odds": 2.0,
                 "soft_odds": 2.12,
                 "consensus_books": 3,
+                "consensus_source": "pinnacle",
             },
         ]
 

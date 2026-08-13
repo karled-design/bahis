@@ -4,7 +4,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-from config.settings import MAX_EV_THRESHOLD
+from config.settings import MAX_EV_THRESHOLD, MIN_CONSENSUS_BOOKMAKERS
 from core.clv_engine import calculate_stake_amount
 from core.context_fusion import apply_action_tier_context_fusion
 from core.experimental_features import (
@@ -28,11 +28,11 @@ from core.match_filters import (
     is_virtual_match_text,
 )
 from core.passion_engine import (
-    calculate_expected_value,
-    calculate_expected_value_from_probability,
     classify_ev_tier,
     is_ev_absurd,
+    resolve_match_ev,
 )
+from core.price_reference import REFERENCE_PINNACLE, max_tier_for_reference
 
 __all__ = (
     "ScanPipelineStats",
@@ -57,6 +57,7 @@ class ScanPipelineStats:
     context_filter: int = 0
     experimental_checked: int = 0
     experimental_would_filter: int = 0
+    zayif_referans: int = 0
     watch: int = 0
     action: int = 0
     high: int = 0
@@ -81,6 +82,7 @@ class ScanPipelineStats:
             "context_filter": self.context_filter,
             "experimental_checked": self.experimental_checked,
             "experimental_would_filter": self.experimental_would_filter,
+            "zayif_referans": self.zayif_referans,
             "watch": self.watch,
             "action": self.action,
             "high": self.high,
@@ -117,15 +119,35 @@ def _format_ev_percent(ev: float) -> str:
 
 
 def _calculate_match_ev(match: dict[str, Any], sharp_odds: float, soft_odds: float) -> float:
-    """EV hesabi: marji temizlenmis olasilik varsa onu, yoksa ham 1/oran kullanir."""
-    fair_probability = match.get("fair_probability")
-    if (
-        not isinstance(fair_probability, bool)
-        and isinstance(fair_probability, (int, float))
-        and 0.0 < float(fair_probability) < 1.0
-    ):
-        return calculate_expected_value_from_probability(float(fair_probability), soft_odds)
-    return calculate_expected_value(sharp_odds, soft_odds)
+    """EV hesabi (tek kaynak): panel de motor da `resolve_match_ev` kullanir."""
+    return resolve_match_ev(match, sharp_odds, soft_odds)
+
+
+def _tier_consensus_books(match: dict[str, Any], consensus_books: int) -> int:
+    """Pinnacle tek basina referans oldugunda 'yeterli kitapci' sayilir.
+
+    Katman siniflandirmasi HIGH icin en az `MIN_CONSENSUS_BOOKMAKERS` fiyat
+    ister; bu kural yumusak ortalamaya karsi bir koruma. Pinnacle'in kendisi
+    zaten referansin en keskin hali oldugu icin tek fiyatla bu esigi karsilar.
+    """
+    if str(match.get("consensus_source", "")).strip().casefold() == REFERENCE_PINNACLE:
+        return max(consensus_books, int(MIN_CONSENSUS_BOOKMAKERS))
+    return consensus_books
+
+
+def _apply_reference_quality(tier: str, match: dict[str, Any]) -> str | None:
+    """Referans kalitesi katmani sinirlar (core/price_reference.py).
+
+    Pinnacle/borsa -> tam yetki; ikincil kitapci ortalamasi -> yalniz IZLE;
+    yumusak piyasa ortalamasi -> bildirim yok. Nesine ile ayni sinifta bir
+    kitapciya karsi olculen "avantaj" edge degil, ayni hatanin kopyasidir.
+    """
+    allowed = max_tier_for_reference(str(match.get("consensus_source", "")))
+    if allowed is None:
+        return None
+    if allowed == "WATCH" and tier != "WATCH":
+        return "WATCH"
+    return tier
 
 
 def _resolve_league_name(match: dict[str, Any]) -> str:
@@ -263,6 +285,12 @@ def _evaluate_matches_hero(
             stats.suspicious_match += 1
             continue
 
+        # Hero modu her zaman kupon acar; bu yuzden yalniz tam yetkili
+        # referansla (Pinnacle/borsa) calisir.
+        if _apply_reference_quality("ACTION", match) != "ACTION":
+            stats.zayif_referans += 1
+            continue
+
         try:
             sharp_odds = float(match["sharp_odds"])
             soft_odds = float(match["soft_odds"])
@@ -386,7 +414,9 @@ def _evaluate_matches_ev(
         ev = _calculate_match_ev(match, sharp_odds, soft_odds)
         consensus_books = int(match.get("consensus_books", 0) or 0)
         tier = classify_ev_tier(
-            ev, consensus_books=consensus_books, allow_extreme_ev=bypass_data_filters
+            ev,
+            consensus_books=_tier_consensus_books(match, consensus_books),
+            allow_extreme_ev=bypass_data_filters,
         )
 
         if tier is None:
@@ -394,6 +424,11 @@ def _evaluate_matches_ev(
                 stats.absurd_ev += 1
             else:
                 stats.pasif_ev += 1
+            continue
+
+        tier = _apply_reference_quality(tier, match)
+        if tier is None:
+            stats.zayif_referans += 1
             continue
 
         tier, fusion_decision = apply_action_tier_context_fusion(

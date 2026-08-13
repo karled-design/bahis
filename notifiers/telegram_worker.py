@@ -16,6 +16,7 @@ from core.operator_risk_settings import get_action_ev_threshold, get_watch_ev_th
 from core.passion_engine import calculate_expected_value, get_active_min_ev_threshold
 from core.beginner_alert import build_beginner_play_confirmation, build_beginner_settlement_notice, market_code_from_label, build_beginner_settlement_notice
 from core.kasa_sync import refresh_alert_budget_lines
+from core.time_utils import parse_utc
 from database.db_manager import (
     add_kupon,
     get_latest_bakiye,
@@ -398,6 +399,7 @@ def _cache_alert_context(
     event_id: str | None = None,
     commence_time: str | None = None,
     stake: float | None = None,
+    ev: float | None = None,
 ) -> None:
     safe_id = _normalize_match_id(match_id)
     parsed = _parse_alert_message(message_text)
@@ -425,8 +427,27 @@ def _cache_alert_context(
                 commence_time.strip() if isinstance(commence_time, str) else ""
             ),
             "stake": stake_value,
+            # Kararin verildigi andaki EV (motorun hesabi). Mesajdan yeniden
+            # turetmek yerine burada saklanir; kupon kaydi motorla ayni sayiyi
+            # gorur.
+            "ev_at_alert": (
+                float(ev)
+                if ev is not None and not isinstance(ev, bool) and isinstance(ev, (int, float))
+                else None
+            ),
             "cached_at": time.time(),
         }
+
+
+def _context_ev(context: dict[str, Any]) -> float:
+    """Kupon icin EV: onbellekte motorun degeri varsa o, yoksa oranlardan hesap."""
+    cached = context.get("ev_at_alert")
+    if not isinstance(cached, bool) and isinstance(cached, (int, float)):
+        return float(cached)
+    return calculate_expected_value(
+        float(context["sharp_oran"]),
+        float(context["soft_oran"]),
+    )
 
 
 def _get_alert_context(match_id: str, message_text: str) -> dict[str, Any]:
@@ -591,6 +612,19 @@ def _is_duplicate_play(context: dict[str, Any]) -> bool:
 
 
 def _handle_play_callback(callback: dict[str, Any], callback_data: str) -> bool:
+    from core.measurement_mode import is_measurement_mode_enabled
+
+    # Olcum modunda para hareketi yok. Yeni mesajlarda dugme zaten cikmaz;
+    # bu kontrol mod acilmadan once gonderilmis eski mesajlar icin emniyet kemeri.
+    if is_measurement_mode_enabled():
+        _emit_kupon_diag(f"olcum modu | kupon engellendi | {callback_data}")
+        _send_operator_notice(
+            "Olcum modu acik: sinyaller kaydediliyor ama kupon acilmiyor. "
+            "Oynamak icin olcum modunu kapatin."
+        )
+        _clear_inline_buttons(callback)
+        return False
+
     parsed = _parse_play_callback(callback_data)
     if parsed is None:
         _emit_kupon_diag(f"invalid play callback | {callback_data}")
@@ -670,10 +704,7 @@ def _handle_play_callback(callback: dict[str, Any], callback_data: str) -> bool:
             stake=stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -815,10 +846,7 @@ def play_recommendation_from_panel(
             stake=resolved_stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -1416,15 +1444,9 @@ _last_reminder_sweep_at = 0.0
 
 def _seconds_to_kickoff(commence_time: str | None, *, now: float | None = None) -> float | None:
     """Maca kalan saniye. commence_time bilinmiyor/gecersizse None."""
-    if not isinstance(commence_time, str) or not commence_time.strip():
+    parsed = parse_utc(commence_time)
+    if parsed is None:
         return None
-    raw = commence_time.strip().replace("Z", "+00:00")
-    try:
-        parsed = datetime.fromisoformat(raw)
-    except ValueError:
-        return None
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
     reference = now if now is not None else datetime.now(timezone.utc).timestamp()
     return parsed.timestamp() - reference
 
@@ -1474,10 +1496,7 @@ def _auto_record_play_in_test(match_id: str, stake: float, message_text: str) ->
             stake=stake,
             soft_oran=float(context["soft_oran"]),
             sharp_oran=float(context["sharp_oran"]),
-            ev_at_alert=calculate_expected_value(
-                float(context["sharp_oran"]),
-                float(context["soft_oran"]),
-            ),
+            ev_at_alert=_context_ev(context),
             sport_key=str(context.get("sport_key", "")),
             event_id=str(context.get("event_id", "")),
             commence_time=str(context.get("commence_time", "")),
@@ -1520,6 +1539,7 @@ def send_alert(
     cycle_id: str | None = None,
     notify_key: str | None = None,
     bypass_scan_gate: bool = False,
+    ev: float | None = None,
 ) -> bool:
     if not isinstance(message, str):
         _emit_operator_diag("message must be a string")
@@ -1596,6 +1616,7 @@ def send_alert(
             event_id=event_id,
             commence_time=commence_time,
             stake=normalized_stake,
+            ev=ev,
         )
         # TEST modu: operator dokunmadan sanal kuponu otomatik kaydet.
         # Gercek modda (PILOT_MODE=False) bu satir calismaz; kayit yine

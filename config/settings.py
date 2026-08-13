@@ -16,6 +16,7 @@ __all__ = (
     "TELEGRAM_TOKEN",
     "TELEGRAM_CHAT_ID",
     "ODDS_API_KEY",
+    "ODDS_API_REGIONS",
     "TOTAL_KASA",
     "RISK_PER_TRADE",
     "MIN_VALUE_THRESHOLD",
@@ -37,6 +38,9 @@ __all__ = (
     "SQE_DB_PATH",
     "resolve_sqe_db_path",
     "HERO_MODE",
+    "PANEL_HOST",
+    "PANEL_PORT",
+    "PANEL_TOKEN",
 )
 
 
@@ -47,6 +51,9 @@ class ConfigurationError(RuntimeError):
 TELEGRAM_TOKEN: Final[str] = os.getenv("TELEGRAM_TOKEN", "").strip()
 TELEGRAM_CHAT_ID: Final[str] = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 ODDS_API_KEY: Final[str] = os.getenv("ODDS_API_KEY", "").strip()
+# Ana bulten cagrisinin bolgeleri. Maliyet = bolge x pazar; Pinnacle ve borsalar
+# "eu" icinde oldugu icin varsayilan tek bolgedir (tarama basina 4 -> 2 kredi).
+ODDS_API_REGIONS: Final[str] = os.getenv("ODDS_API_REGIONS", "eu").strip().casefold() or "eu"
 
 TOTAL_KASA: Final[float] = 20000.0  # Başlangıç Operatör Sermayesi (TL)
 RISK_PER_TRADE: Final[float] = 0.02  # Maç başı taban kasa riski (varsayılan %2). Canlı değer aktif bildirim profilinden gelir. Tutar artık YARIM-KELLY ile hesaplanır (core/clv_engine.py); bu oran maç başı üst sınırı verir (en fazla 2×). Oran bilinmezse eski formüle düşülür.
@@ -107,6 +114,23 @@ def resolve_sqe_db_path(
 
 SQE_DB_PATH: Final[Path] = resolve_sqe_db_path()
 
+# Operator paneli: varsayilan olarak YALNIZ bu bilgisayardan erisilir.
+# Uzaktan erisim icin PANEL_HOST'u Tailscale adresine (veya 0.0.0.0'a) alin ve
+# PANEL_TOKEN tanimlayin; token yoksa panel yerel disina acilmaz.
+PANEL_HOST: Final[str] = os.getenv("PANEL_HOST", "127.0.0.1").strip() or "127.0.0.1"
+PANEL_TOKEN: Final[str] = os.getenv("PANEL_TOKEN", "").strip()
+
+
+def _resolve_panel_port(raw: str) -> int:
+    try:
+        port = int(raw)
+    except ValueError:
+        return 8765
+    return port if 1 <= port <= 65535 else 8765
+
+
+PANEL_PORT: Final[int] = _resolve_panel_port(os.getenv("PANEL_PORT", "8765").strip())
+
 SCAN_INTERVAL_SECONDS: Final[int] = (
     PILOT_SCAN_INTERVAL_SECONDS if PILOT_MODE else LIVE_SCAN_INTERVAL_SECONDS
 )
@@ -152,6 +176,14 @@ def _validate_configuration() -> None:
 
     _require_non_empty_str("TELEGRAM_CHAT_ID", TELEGRAM_CHAT_ID)
     _require_non_empty_str("ODDS_API_KEY", ODDS_API_KEY)
+    regions = _require_non_empty_str("ODDS_API_REGIONS", ODDS_API_REGIONS)
+    allowed_regions = {"eu", "uk", "us", "us2", "au"}
+    unknown = sorted(set(regions.split(",")) - allowed_regions)
+    if unknown:
+        raise ConfigurationError(
+            f"ODDS_API_REGIONS: unknown region(s) {','.join(unknown)}; "
+            f"allowed: {','.join(sorted(allowed_regions))}"
+        )
     _require_positive_float("TOTAL_KASA", TOTAL_KASA)
     _require_open_unit_interval("RISK_PER_TRADE", RISK_PER_TRADE)
     _require_open_unit_interval("MIN_VALUE_THRESHOLD", MIN_VALUE_THRESHOLD)
@@ -187,6 +219,13 @@ def _validate_configuration() -> None:
     enrich_mode = _require_non_empty_str("CONTEXT_ENRICH_MODE", CONTEXT_ENRICH_MODE)
     if enrich_mode not in {"off", "on", "auto"}:
         raise ConfigurationError("CONTEXT_ENRICH_MODE: must be 'off', 'on', or 'auto'")
+    _require_non_empty_str("PANEL_HOST", PANEL_HOST)
+    _require_positive_int("PANEL_PORT", PANEL_PORT)
+    if PANEL_HOST not in {"127.0.0.1", "::1", "localhost"} and len(PANEL_TOKEN) < 16:
+        raise ConfigurationError(
+            "PANEL_TOKEN: PANEL_HOST yerel degilse en az 16 karakterlik bir token gerekir "
+            "(ornek: python -c \"import secrets; print(secrets.token_urlsafe(32))\")"
+        )
 
 
 def _bootstrap() -> None:

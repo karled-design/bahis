@@ -10,7 +10,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from config.settings import TELEGRAM_TOKEN
+from config.settings import PANEL_PORT, TELEGRAM_TOKEN
 
 __all__ = (
     "DEFAULT_PANEL_PORT",
@@ -22,7 +22,7 @@ __all__ = (
     "reset_telegram_api_session",
 )
 
-DEFAULT_PANEL_PORT = 8765
+DEFAULT_PANEL_PORT = PANEL_PORT
 MOTOR_PROCESS_PATTERN = "bahis/main.py"
 _REQUEST_TIMEOUT_SECONDS = 15.0
 _MAX_QUEUE_DRAIN_ROUNDS = 20

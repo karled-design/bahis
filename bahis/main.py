@@ -13,6 +13,7 @@ from config.settings import (
     COOLDOWN_ODDS_CHANGE_BYPASS_PCT,
     EXECUTION_BOOK,
     MAX_EV_THRESHOLD,
+    PANEL_PORT,
     SCAN_INTERVAL_SECONDS,
 )
 from core.hero_mode import bootstrap_hero_mode, build_hero_panel_payload, is_hero_mode_enabled
@@ -64,10 +65,15 @@ from core.match_filters import (
     is_virtual_match_text,
     reset_scan_cycle,
 )
-from core.passion_engine import calculate_expected_value, get_active_min_ev_threshold
+from core.passion_engine import get_active_min_ev_threshold, resolve_match_ev
 from core.scan_pipeline import ScanCandidate, evaluate_matches
 from core.market_catalog import FAMILY_FIRST_HALF, market_family
 from core.first_half_shadow import record_first_half_shadow
+from core.measurement_mode import (
+    is_measurement_mode_enabled,
+    record_scan_funnel,
+    record_signal as record_measurement_signal,
+)
 from core.fixture_notify_guard import record_fixture_telegram_sent
 from notifiers import telegram_worker
 from notifiers.telegram_reset import DEFAULT_PANEL_PORT
@@ -124,6 +130,7 @@ class _ScanCycleStats(TypedDict):
     context_filter: int
     experimental_checked: int
     experimental_would_filter: int
+    zayif_referans: int
     context_bundle: int
     context_api_req: int
     watch: int
@@ -157,6 +164,7 @@ def _new_scan_cycle_stats() -> _ScanCycleStats:
         "context_filter": 0,
         "experimental_checked": 0,
         "experimental_would_filter": 0,
+        "zayif_referans": 0,
         "context_bundle": 0,
         "context_api_req": 0,
         "watch": 0,
@@ -187,6 +195,7 @@ def _format_scan_cycle_summary(stats: _ScanCycleStats) -> str:
         f"absurd_ev={stats['absurd_ev']} | suspicious_match={stats['suspicious_match']} | "
         f"context_filter={stats['context_filter']} | "
         f"experimental_would_filter={stats.get('experimental_would_filter', 0)} | "
+        f"zayif_referans={stats.get('zayif_referans', 0)} | "
         f"context_bundle={stats['context_bundle']} | context_api_req={stats['context_api_req']} | "
         f"watch={stats['watch']} | "
         f"action={stats['action']} | high={stats['high']} | "
@@ -400,12 +409,16 @@ def _dispatch_scan_notifications(
                 )
                 continue
 
+        # Olcum modu: mesaj gider ama "Oyna" dugmesi cikmaz (match_id/stake yok),
+        # boylece kupon acilamaz ve bakiye degismez.
+        measuring = is_measurement_mode_enabled()
         is_watch = tier == "WATCH"
+        no_play = is_watch or measuring
         match_record = candidate.get("match_record") if isinstance(candidate.get("match_record"), dict) else {}
         sent = telegram_worker.send_alert(
             message=candidate["alert_message"],
-            match_id=None if is_watch else candidate["match_id"],
-            stake=None if is_watch else candidate["stake"],
+            match_id=None if no_play else candidate["match_id"],
+            stake=None if no_play else candidate["stake"],
             soft_odds=candidate["soft_odds"],
             mac_adi=candidate["match_name"],
             market=candidate["market"],
@@ -414,8 +427,32 @@ def _dispatch_scan_notifications(
             commence_time=str(match_record.get("commence_time", "")).strip() or None,
             cycle_id=cycle_id,
             notify_key=notify_key,
+            ev=candidate["ev"],
         )
         if sent:
+            if measuring:
+                record_measurement_signal(
+                    mac_adi=candidate["match_name"],
+                    market=candidate["market"],
+                    tier=tier,
+                    soft_odds=float(candidate["soft_odds"]),
+                    sharp_odds=float(candidate.get("sharp_odds", 0.0)),
+                    ev=float(candidate.get("ev", 0.0)),
+                    cycle_id=cycle_id or "",
+                    league_name=str(match_record.get("league_name", "")),
+                    sport_key=candidate["sport_key"],
+                    event_id=str(match_record.get("event_id", "")),
+                    commence_time=str(match_record.get("commence_time", "")),
+                    consensus_source=str(match_record.get("consensus_source", "")),
+                    consensus_books=int(match_record.get("consensus_books", 0) or 0),
+                    fair_probability=(
+                        float(match_record["fair_probability"])
+                        if isinstance(match_record.get("fair_probability"), (int, float))
+                        and not isinstance(match_record.get("fair_probability"), bool)
+                        else None
+                    ),
+                    stake=float(candidate.get("stake", 0.0)),
+                )
             notified_registry[notify_key] = {
                 "notified_at": time.time(),
                 "soft_odds": candidate["soft_odds"],
@@ -572,7 +609,7 @@ def _build_ui_matches(matches: list) -> list[dict[str, str | float]]:
                 "market": str(match["market"]),
                 "sharp_odds": sharp_odds,
                 "soft_odds": soft_odds,
-                "ev": calculate_expected_value(sharp_odds, soft_odds),
+                "ev": resolve_match_ev(match, sharp_odds, soft_odds),
                 "has_context": bool(match.get("context_bundle")),
             }
         )
@@ -752,7 +789,7 @@ def main() -> None:
         panel_label = "CANLI MAC + BUTCE TAKIBI"
         print(f"[SQE-V1] Veritabani: {get_db_path()}")
         print(
-            f"[SQE-V1] Nesine paneli ({panel_label}): http://127.0.0.1:8765 | "
+            f"[SQE-V1] Nesine paneli ({panel_label}): http://127.0.0.1:{PANEL_PORT} | "
             f"execution={EXECUTION_BOOK} | kasa={current_kasa:.2f} TL"
         )
         if not is_operator_budget_configured():
@@ -898,6 +935,7 @@ def main() -> None:
                 "context_filter",
                 "experimental_checked",
                 "experimental_would_filter",
+                "zayif_referans",
                 "watch",
                 "action",
                 "high",
@@ -964,6 +1002,11 @@ def main() -> None:
             )
 
             print(_format_scan_cycle_summary(cycle_stats))
+
+            if is_measurement_mode_enabled():
+                # Huni: hangi asamada kac aday eledik. Esikleri degistirmeden
+                # once darbogazin nerede oldugunu bu tablo gosterir.
+                record_scan_funnel(dict(cycle_stats), cycle_id=cycle_id or "")
 
             settlement_stats = run_settlement_pass()
             if settlement_stats["settled"] > 0 or settlement_stats["pending"] > 0:
