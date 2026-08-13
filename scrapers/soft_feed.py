@@ -96,6 +96,9 @@ _VIRTUAL_MATCH_LEAGUE_KEYS = (
 )
 
 _PREMATCH_FULL_URL = "https://cdnbulten.nesine.com/api/bulten/getprebultenfull"
+# Tam bulten tek parca JSON'dur ve gun icinde ~8 MB'a kadar buyur; kucuk bir
+# tavan sessizce kirpip JSON parse hatasina yol acar.
+_PREMATCH_MAX_RESPONSE_BYTES = 32_000_000
 _PREMATCH_SKIP_FRAGMENTS = (
     "grup bahisleri",
     "turnuva -",
@@ -166,10 +169,18 @@ def _fetch_nesine_prematch_json() -> dict[str, Any] | None:
     )
     try:
         with urllib.request.urlopen(request, timeout=SOFT_MARKET_LAG_TIMEOUT) as response:
-            raw = response.read(8_000_000).decode("utf-8", errors="replace")
+            payload_bytes = response.read(_PREMATCH_MAX_RESPONSE_BYTES)
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as exc:
         _emit_operator_diag(f"nesine prematch | {exc}")
         return None
+
+    if len(payload_bytes) >= _PREMATCH_MAX_RESPONSE_BYTES:
+        _emit_operator_diag(
+            f"nesine prematch | yanit {_PREMATCH_MAX_RESPONSE_BYTES} bayt tavanini asti"
+        )
+        return None
+
+    raw = payload_bytes.decode("utf-8", errors="replace")
 
     if _looks_like_html(raw):
         _emit_operator_diag("nesine prematch | HTML yanit")
