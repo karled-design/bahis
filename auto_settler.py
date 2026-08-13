@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from core import clv_tracker
+from core import clv_tracker, measurement_mode
 from core.settlement_log import append_settlement_cycle_log
 from core.time_utils import parse_utc
 from database.db_manager import (
@@ -550,6 +550,12 @@ def run_settlement_pass() -> dict[str, int]:
                 log_record["clv_captured"] = clv_summary["yakalandi"]
         except Exception as exc:
             logger.error("Teşhis: CLV kapanis yakalama hatasi | %s", exc)
+        try:
+            olcum_summary = measurement_mode.capture_pending_clv()
+            if olcum_summary.get("yakalandi"):
+                log_record["olcum_clv_captured"] = olcum_summary["yakalandi"]
+        except Exception as exc:
+            logger.error("Teşhis: Olcum modu CLV yakalama hatasi | %s", exc)
         pending_kupons = get_pending_kupons()
         log_record["pending_before"] = len(pending_kupons)
         if not pending_kupons:
