@@ -74,6 +74,14 @@ from core.measurement_mode import (
     record_scan_funnel,
     record_signal as record_measurement_signal,
 )
+from core.steam_detector import (
+    STEAM_TIER,
+    SteamSignal,
+    build_steam_message,
+    detect_steam,
+    filter_uncooled,
+    mark_notified,
+)
 from core.fixture_notify_guard import record_fixture_telegram_sent
 from notifiers import telegram_worker
 from notifiers.telegram_reset import DEFAULT_PANEL_PORT
@@ -139,6 +147,7 @@ class _ScanCycleStats(TypedDict):
     aday: int
     telegram: int
     izle: int
+    steam: int
     notify_gate: int
     cooldown: int
     hero_pass: int
@@ -173,6 +182,7 @@ def _new_scan_cycle_stats() -> _ScanCycleStats:
         "aday": 0,
         "telegram": 0,
         "izle": 0,
+        "steam": 0,
         "notify_gate": 0,
         "cooldown": 0,
         "hero_pass": 0,
@@ -200,7 +210,7 @@ def _format_scan_cycle_summary(stats: _ScanCycleStats) -> str:
         f"watch={stats['watch']} | "
         f"action={stats['action']} | high={stats['high']} | "
         f"aday={stats['aday']} | telegram={stats['telegram']} | "
-        f"izle={stats['izle']} | notify_gate={stats['notify_gate']} | cooldown={stats['cooldown']} | "
+        f"izle={stats['izle']} | steam={stats.get('steam', 0)} | notify_gate={stats['notify_gate']} | cooldown={stats['cooldown']} | "
         f"hero_pass={stats.get('hero_pass', 0)} | hero_reject_guven={stats.get('hero_reject_low_confidence', 0)} | "
         f"hero_reject_form={stats.get('hero_reject_context', 0)} | hero_reject_piyasa={stats.get('hero_reject_market', 0)} | "
         f"hero_daily_limit={stats.get('hero_daily_limit', 0)} | hero_loss_stop={stats.get('hero_loss_stop', 0)} | "
@@ -491,6 +501,87 @@ def _dispatch_scan_notifications(
             )
 
     _ = cycle_stats
+
+
+_STEAM_MAX_PER_CYCLE = 3
+
+
+def _dispatch_steam_notifications(
+    matches: list[dict],
+    cycle_id: str | None,
+    cycle_stats: _ScanCycleStats | None = None,
+) -> int:
+    """Steam (gecikmeli fiyat) bulgularini IZLE bildirimi olarak gonderir.
+
+    Bu yol statik EV kapisindan bagimsizdir: esigin altinda kalan ama keskin
+    piyasanin belirgin sekilde hareket ettigi maclari yakalar. Kupon ASLA
+    acilmaz (match_id/stake yok); olcum modunda ayri katmanla (STEAM) deftere
+    yazilir, boylece CLV'si statik sinyallerden ayri degerlendirilir.
+    """
+    try:
+        signals = filter_uncooled(detect_steam(matches))
+    except Exception as exc:
+        print(f"Donanim Erisilemiyor: Steam Avcisi Hatasi | {exc}", file=sys.stderr)
+        return 0
+
+    if not signals:
+        return 0
+
+    measuring = is_measurement_mode_enabled()
+    sent_count = 0
+    for signal in signals[:_STEAM_MAX_PER_CYCLE]:
+        sent = telegram_worker.send_alert(
+            message=build_steam_message(signal),
+            match_id=None,
+            stake=None,
+            soft_odds=signal.soft_odds,
+            mac_adi=signal.match_name,
+            market=signal.market,
+            sport_key=signal.sport_key,
+            event_id=signal.event_id or None,
+            commence_time=signal.commence_time or None,
+            bypass_scan_gate=True,
+        )
+        if not sent:
+            print(
+                f"[SQE-V1] Steam bildirimi basarisiz | mac={signal.match_name}",
+                file=sys.stderr,
+            )
+            continue
+
+        mark_notified(signal)
+        sent_count += 1
+        if measuring:
+            _record_steam_measurement(signal, cycle_id)
+        print(
+            f"[SQE-V1] STEAM | mac={signal.match_name} | market={signal.market} | "
+            f"sharp={signal.onceki_sharp}->{signal.sharp_odds} "
+            f"(%{signal.sharp_drop * 100.0:.1f}) | nesine={signal.soft_odds} | "
+            f"pencere_dk={signal.gozlem_araligi_dk}"
+        )
+
+    if cycle_stats is not None:
+        cycle_stats["steam"] += sent_count
+    return sent_count
+
+
+def _record_steam_measurement(signal: SteamSignal, cycle_id: str | None) -> None:
+    record_measurement_signal(
+        mac_adi=signal.match_name,
+        market=signal.market,
+        tier=STEAM_TIER,
+        soft_odds=signal.soft_odds,
+        sharp_odds=signal.sharp_odds,
+        ev=(signal.soft_odds / signal.sharp_odds) - 1.0,
+        cycle_id=cycle_id or "",
+        league_name=signal.league_name,
+        sport_key=signal.sport_key,
+        event_id=signal.event_id,
+        commence_time=signal.commence_time,
+        consensus_source=signal.consensus_source,
+        consensus_books=signal.consensus_books,
+        stake=0.0,
+    )
 
 
 def _configure_logging() -> None:
@@ -979,6 +1070,10 @@ def main() -> None:
                 cycle_stats,
             )
 
+            # Steam avi: statik EV esiginin altinda kalan ama keskin fiyati
+            # kosan maclar. Yalniz IZLE bildirimi uretir, kupon acmaz.
+            _dispatch_steam_notifications(matches, cycle_id, cycle_stats)
+
             # Son cagri: kick-off'a yaklasmis, hala degerli ama oynanmamis
             # bahisleri bir kez daha hatirlat (tarama beynine dokunmaz; sadece
             # o turun taze aday listesini kullanir).
@@ -992,7 +1087,11 @@ def main() -> None:
             if is_hero_mode_enabled():
                 record_hero_measurement_scan_day()
 
-            sent_total = int(cycle_stats.get("telegram", 0)) + int(cycle_stats.get("izle", 0))
+            sent_total = (
+                int(cycle_stats.get("telegram", 0))
+                + int(cycle_stats.get("izle", 0))
+                + int(cycle_stats.get("steam", 0))
+            )
             update_sistem_durumu(
                 last_scan=telegram_worker.build_last_scan_panel_payload(
                     cycle_stats,
