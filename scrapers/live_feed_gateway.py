@@ -13,6 +13,7 @@ from scrapers.sharp_feed import (
     get_last_sharp_scan_diag,
     get_sharp_live_odds,
 )
+from scrapers.betfair_feed import get_betfair_sharp_odds, is_betfair_enabled
 from scrapers.soft_feed import get_yasal_live_odds
 
 from core.match_filters import (
@@ -535,6 +536,40 @@ def _filter_nesine_verified_soft_feed(
     return verified
 
 
+def _sharp_entry_identity(entry: dict[str, str | float]) -> tuple[str, str]:
+    name = _canonicalize_team_name(str(entry.get("match_name", "")))
+    return (name, str(entry.get("market", "")).strip().upper())
+
+
+def _merge_sharp_sources(
+    primary: dict[str, dict[str, str | float]],
+    secondary: dict[str, dict[str, str | float]],
+) -> dict[str, dict[str, str | float]]:
+    """Betfair kayitlarini Odds API kapsaminin USTUNE degil, YANINA ekler.
+
+    Ayni mac+pazar iki kaynakta da varsa Pinnacle tabanli kayit korunur; borsa
+    yalnizca kotanin yetismedigi maclari doldurur. Boylece kapsam buyur, mevcut
+    referans kalitesi degismez.
+    """
+    if not secondary:
+        return primary
+
+    known = {_sharp_entry_identity(entry) for entry in primary.values() if isinstance(entry, dict)}
+    merged = dict(primary)
+    added = 0
+    for key, entry in secondary.items():
+        if not isinstance(entry, dict):
+            continue
+        if _sharp_entry_identity(entry) in known:
+            continue
+        merged[f"betfair:{key}"] = entry
+        added += 1
+
+    if added:
+        _emit_scan_info(f"Betfair borsasindan {added} ek keskin kayit (0 API kredisi)")
+    return merged
+
+
 def check_live_feed_health() -> dict[str, Any]:
     odds_health = check_odds_api_health()
     return {
@@ -597,6 +632,14 @@ def get_unified_live_data() -> list:
         soft_feed = {}
     if not isinstance(sharp_feed, dict):
         sharp_feed = {}
+
+    # Ikinci keskin kaynak: Betfair Exchange (kota harcamaz). Kimlik bilgisi
+    # yoksa kapali; hata durumunda mevcut akis aynen devam eder.
+    if is_betfair_enabled():
+        try:
+            sharp_feed = _merge_sharp_sources(sharp_feed, get_betfair_sharp_odds())
+        except Exception as exc:
+            _emit_operator_diag(f"betfair kaynagi atlandi | {exc}")
 
     if not soft_feed and not sharp_feed:
         _emit_operator_diag("canli kaynaklardan mac verisi alinamadi")

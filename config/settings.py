@@ -17,6 +17,9 @@ __all__ = (
     "TELEGRAM_CHAT_ID",
     "ODDS_API_KEY",
     "ODDS_API_REGIONS",
+    "BETFAIR_APP_KEY",
+    "BETFAIR_USERNAME",
+    "BETFAIR_PASSWORD",
     "TOTAL_KASA",
     "RISK_PER_TRADE",
     "MIN_VALUE_THRESHOLD",
@@ -54,6 +57,12 @@ ODDS_API_KEY: Final[str] = os.getenv("ODDS_API_KEY", "").strip()
 # Ana bulten cagrisinin bolgeleri. Maliyet = bolge x pazar; Pinnacle ve borsalar
 # "eu" icinde oldugu icin varsayilan tek bolgedir (tarama basina 4 -> 2 kredi).
 ODDS_API_REGIONS: Final[str] = os.getenv("ODDS_API_REGIONS", "eu").strip().casefold() or "eu"
+
+# Betfair Exchange (ikinci keskin kaynak). Ucretsiz "delayed" uygulama anahtari
+# kota harcamaz; ucu birden tanimli degilse kaynak sessizce kapali kalir.
+BETFAIR_APP_KEY: Final[str] = os.getenv("BETFAIR_APP_KEY", "").strip()
+BETFAIR_USERNAME: Final[str] = os.getenv("BETFAIR_USERNAME", "").strip()
+BETFAIR_PASSWORD: Final[str] = os.getenv("BETFAIR_PASSWORD", "").strip()
 
 TOTAL_KASA: Final[float] = 20000.0  # Başlangıç Operatör Sermayesi (TL)
 RISK_PER_TRADE: Final[float] = 0.02  # Maç başı taban kasa riski (varsayılan %2). Canlı değer aktif bildirim profilinden gelir. Tutar artık YARIM-KELLY ile hesaplanır (core/clv_engine.py); bu oran maç başı üst sınırı verir (en fazla 2×). Oran bilinmezse eski formüle düşülür.

@@ -38,6 +38,8 @@ from core.scan_league_settings import (
 )
 
 __all__ = (
+    "attach_fair_probabilities",
+    "classify_feed_phase",
     "get_sharp_live_odds",
     "fetch_settlement_results",
     "check_odds_api_health",
@@ -547,7 +549,7 @@ def _resolve_event_commence_time(event: dict[str, Any]) -> str:
     return ""
 
 
-def _classify_feed_phase(commence_time: str) -> str:
+def classify_feed_phase(commence_time: str) -> str:
     value = commence_time.strip()
     if not value:
         return ""
@@ -736,16 +738,16 @@ def _parse_consensus_feed(
             "consensus_source": source,
             "event_id": meta.get("event_id", event_key),
             "commence_time": meta.get("commence_time", ""),
-            "feed_phase": _classify_feed_phase(meta.get("commence_time", "")),
+            "feed_phase": classify_feed_phase(meta.get("commence_time", "")),
             "sport_key": meta.get("sport_key", sport_key),
             "league_name": meta.get("league_name", _SPORT_KEY_LABELS.get(sport_key, sport_key)),
         }
 
-    _attach_fair_probabilities(normalized)
+    attach_fair_probabilities(normalized)
     return normalized
 
 
-def _attach_fair_probabilities(normalized: dict[str, dict[str, str | float]]) -> None:
+def attach_fair_probabilities(normalized: dict[str, dict[str, str | float]]) -> None:
     """Kitapci kar payini (marj) cikarip her kayda fair_probability ekler.
 
     Ayni macin ayni pazar ailesindeki TUM sonuclar (MS1+X+MS2 veya ALT+UST)
