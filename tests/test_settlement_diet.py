@@ -101,6 +101,30 @@ class SettlementDietTests(unittest.TestCase):
         self.assertEqual(seen_keys, [("soccer_fifa_world_cup",)])
         self.assertEqual(stats["fetched"], 1)
 
+    def test_run_pass_captures_measurement_clv_without_kupons(self) -> None:
+        # Olcum modunda kupon acilmaz; CLV yakalama yine de her turda calismali.
+        with mock.patch.object(auto_settler, "backfill_pending_kupon_fixture_metadata"), \
+                mock.patch.object(
+                    auto_settler.clv_tracker,
+                    "backfill_missing",
+                    return_value={"yakalandi": 0},
+                ), \
+                mock.patch.object(
+                    auto_settler.measurement_mode,
+                    "capture_pending_clv",
+                    return_value={"toplam": 2, "yakalandi": 2, "atlandi": 0, "beklemede": 0},
+                ) as olcum_mock, \
+                mock.patch.object(auto_settler, "get_pending_kupons", return_value=[]), \
+                mock.patch.object(
+                    auto_settler,
+                    "get_settlement_feed",
+                    side_effect=AssertionError("kupon yokken skor sorgusu atildi"),
+                ), \
+                mock.patch.object(auto_settler, "append_settlement_cycle_log"):
+            auto_settler.run_settlement_pass()
+
+        olcum_mock.assert_called_once()
+
     def test_fetch_settlement_results_queries_only_kupon_leagues(self) -> None:
         calls: list[str] = []
 
