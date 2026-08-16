@@ -21,3 +21,4 @@ database/backups/
 # Elle alınan yedekler: sürüm geçmişi git'te tutulur, klasör depoya girmez.
 yedekler/
 *.yedek_*
+database/backtest_cache/
