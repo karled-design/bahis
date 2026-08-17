@@ -77,6 +77,7 @@ from core.measurement_mode import (
     record_scan_funnel,
     record_signal as record_measurement_signal,
 )
+from core.olcum_nabzi import maybe_send_measurement_pulse, record_cycle as record_pulse_cycle
 from core.fixture_notify_guard import record_fixture_telegram_sent
 from notifiers import telegram_worker
 from notifiers.telegram_reset import DEFAULT_PANEL_PORT
@@ -829,6 +830,8 @@ def main() -> None:
             # Gunluk aksam ozeti: tarama acik/kapali fark etmez, saat geldiyse
             # gunde bir kez gonderilir (core/daily_digest.py kendi kilidini tutar).
             maybe_send_daily_digest(telegram_worker.send_hero_daily_notice)
+            # Olcum nabzi: sinyal cikmasa da surecin yasadigini duzenli bildirir.
+            maybe_send_measurement_pulse(telegram_worker.send_hero_daily_notice)
 
             if not bool(SISTEM_DURUMU.get("scan_enabled", False)):
                 time.sleep(2)
@@ -1010,6 +1013,8 @@ def main() -> None:
             )
 
             print(_format_scan_cycle_summary(cycle_stats))
+
+            record_pulse_cycle(dict(cycle_stats))
 
             if measurement_mode:
                 # Huni: hangi asamada kac aday eledik. Esikleri degistirmeden
