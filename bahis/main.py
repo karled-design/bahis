@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import signal
 import socket
 import sys
 import threading
 import time
+from types import FrameType
 from datetime import datetime, timezone
 from typing import TypedDict
 
@@ -15,6 +17,7 @@ from config.settings import (
     MAX_EV_THRESHOLD,
     PANEL_PORT,
     SCAN_INTERVAL_SECONDS,
+    resolve_scan_interval_seconds,
 )
 from core.hero_mode import bootstrap_hero_mode, build_hero_panel_payload, is_hero_mode_enabled
 from core.hero_measurement import record_hero_measurement_scan_day
@@ -74,6 +77,7 @@ from core.measurement_mode import (
     record_scan_funnel,
     record_signal as record_measurement_signal,
 )
+from core.olcum_nabzi import maybe_send_measurement_pulse, record_cycle as record_pulse_cycle
 from core.steam_detector import (
     STEAM_TIER,
     SteamSignal,
@@ -917,6 +921,8 @@ def main() -> None:
             # Gunluk aksam ozeti: tarama acik/kapali fark etmez, saat geldiyse
             # gunde bir kez gonderilir (core/daily_digest.py kendi kilidini tutar).
             maybe_send_daily_digest(telegram_worker.send_hero_daily_notice)
+            # Olcum nabzi: sinyal cikmasa da surecin yasadigini duzenli bildirir.
+            maybe_send_measurement_pulse(telegram_worker.send_hero_daily_notice)
 
             if not bool(SISTEM_DURUMU.get("scan_enabled", False)):
                 time.sleep(2)
@@ -929,8 +935,13 @@ def main() -> None:
                 time.sleep(10)
                 continue
 
+            measurement_mode = is_measurement_mode_enabled()
+            scan_interval = resolve_scan_interval_seconds(measurement_mode=measurement_mode)
             print("--- [SQE-V1] Canli Piyasa Taramasi Baslatildi ---")
-            print(f"[SQE-V1] Tarama Frekansi: {SCAN_INTERVAL_SECONDS}sn")
+            print(
+                f"[SQE-V1] Tarama Frekansi: {scan_interval}sn"
+                + (" (olcum modu hizli tempo | ek kredi yok)" if measurement_mode else "")
+            )
 
             current_kasa = get_latest_bakiye()
             cycle_id = _reset_scan_cycle_state(notified_registry, current_kasa)
@@ -1102,7 +1113,9 @@ def main() -> None:
 
             print(_format_scan_cycle_summary(cycle_stats))
 
-            if is_measurement_mode_enabled():
+            record_pulse_cycle(dict(cycle_stats))
+
+            if measurement_mode:
                 # Huni: hangi asamada kac aday eledik. Esikleri degistirmeden
                 # once darbogazin nerede oldugunu bu tablo gosterir.
                 record_scan_funnel(dict(cycle_stats), cycle_id=cycle_id or "")
@@ -1120,12 +1133,20 @@ def main() -> None:
                     f"hala_bekleyen={settlement_stats['waiting']} | kasa={refreshed_kasa} TL"
                 )
 
-            time.sleep(SCAN_INTERVAL_SECONDS)
+            time.sleep(scan_interval)
     finally:
         _graceful_shutdown(auto_settler_stop, auto_settler_thread)
 
 
+def _raise_keyboard_interrupt(signum: int, frame: FrameType | None) -> None:
+    """SIGTERM'i SIGINT ile ayni yola sokar: durdurma betigi de temiz kapatir."""
+    del frame
+    print(f"[SQE-V1] Kapatma sinyali alindi ({signum}) | guvenli kapanis basliyor")
+    raise KeyboardInterrupt
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
     try:
         main()
     except KeyboardInterrupt:

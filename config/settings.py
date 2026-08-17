@@ -30,6 +30,9 @@ __all__ = (
     "WATCH_EV_THRESHOLD",
     "HIGH_EV_THRESHOLD",
     "SCAN_INTERVAL_SECONDS",
+    "MEASUREMENT_SCAN_INTERVAL_SECONDS",
+    "MIN_SCAN_INTERVAL_SECONDS",
+    "resolve_scan_interval_seconds",
     "COOLDOWN_ODDS_CHANGE_BYPASS_PCT",
     "PAPER_SLIPPAGE_PCT",
     "CONTEXT_FUSION_MODE",
@@ -65,6 +68,10 @@ MAX_EV_THRESHOLD: Final[float] = 0.15  # Absurt EV ust siniri (>%15 = muhtemel e
 MIN_CONSENSUS_BOOKMAKERS: Final[int] = 2  # Referans oran icin en az sharp bookmaker sayisi
 PILOT_SCAN_INTERVAL_SECONDS: Final[int] = 180  # Pilot tarama araligi (sn)
 LIVE_SCAN_INTERVAL_SECONDS: Final[int] = 600  # Canli tarama araligi (sn)
+# Olcum modunda tempo: borsa (Matchbook) ve Nesine ucretsiz oldugu icin daha sik
+# tur atmak kredi harcamaz; Odds API'yi tarama penceresi zaten kilitler.
+MEASUREMENT_SCAN_INTERVAL_SECONDS: Final[int] = 120
+MIN_SCAN_INTERVAL_SECONDS: Final[int] = 60  # Kaynak koruma alt siniri (sn)
 COOLDOWN_ODDS_CHANGE_BYPASS_PCT: Final[float] = 0.05  # Oran %5+ degisince cooldown bypass
 PAPER_SLIPPAGE_PCT: Final[float] = 0.015  # Pilot paper trade: soft oran -%1.5 slippage
 # Context fusion: filter = ACTION/HIGH yalnizca baglam uyumluysa (baglam yoksa EV-only)
@@ -131,9 +138,28 @@ def _resolve_panel_port(raw: str) -> int:
 
 PANEL_PORT: Final[int] = _resolve_panel_port(os.getenv("PANEL_PORT", "8765").strip())
 
-SCAN_INTERVAL_SECONDS: Final[int] = (
-    PILOT_SCAN_INTERVAL_SECONDS if PILOT_MODE else LIVE_SCAN_INTERVAL_SECONDS
+def _resolve_scan_interval_env(raw: str, *, default: int) -> int:
+    try:
+        seconds = int(raw)
+    except ValueError:
+        return default
+    return max(MIN_SCAN_INTERVAL_SECONDS, seconds)
+
+
+SCAN_INTERVAL_SECONDS: Final[int] = _resolve_scan_interval_env(
+    os.getenv("SCAN_INTERVAL_SECONDS", "").strip(),
+    default=PILOT_SCAN_INTERVAL_SECONDS if PILOT_MODE else LIVE_SCAN_INTERVAL_SECONDS,
 )
+
+
+def resolve_scan_interval_seconds(*, measurement_mode: bool) -> int:
+    """Olcum modunda hizli tempo; ayarlanan aralik zaten kisaysa o korunur."""
+    if measurement_mode:
+        return max(
+            MIN_SCAN_INTERVAL_SECONDS,
+            min(SCAN_INTERVAL_SECONDS, MEASUREMENT_SCAN_INTERVAL_SECONDS),
+        )
+    return SCAN_INTERVAL_SECONDS
 
 
 def _require_non_empty_str(name: str, value: object) -> str:
@@ -207,6 +233,9 @@ def _validate_configuration() -> None:
     _require_positive_int("SOFT_MARKET_LAG_TIMEOUT", SOFT_MARKET_LAG_TIMEOUT)
     _require_positive_int("PILOT_SCAN_INTERVAL_SECONDS", PILOT_SCAN_INTERVAL_SECONDS)
     _require_positive_int("LIVE_SCAN_INTERVAL_SECONDS", LIVE_SCAN_INTERVAL_SECONDS)
+    _require_positive_int("MEASUREMENT_SCAN_INTERVAL_SECONDS", MEASUREMENT_SCAN_INTERVAL_SECONDS)
+    _require_positive_int("MIN_SCAN_INTERVAL_SECONDS", MIN_SCAN_INTERVAL_SECONDS)
+    _require_positive_int("SCAN_INTERVAL_SECONDS", SCAN_INTERVAL_SECONDS)
     bypass = _require_positive_float("COOLDOWN_ODDS_CHANGE_BYPASS_PCT", COOLDOWN_ODDS_CHANGE_BYPASS_PCT)
     if bypass >= 1.0:
         raise ConfigurationError(f"COOLDOWN_ODDS_CHANGE_BYPASS_PCT: must be < 1, got {bypass}")

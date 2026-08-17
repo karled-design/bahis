@@ -54,3 +54,24 @@ cd /Users/apple/esp/bahis
 source .venv/bin/activate
 PYTHONPATH=. python reset_telegram.py
 PYTHONPATH=. python bahis/main.py
+
+---
+
+## Motoru baslatma / durdurma (tek tik)
+
+- **Motoru_Baslat.command** — cift tiklayin: motor arka planda baslar, panel
+  (`http://127.0.0.1:8765`) acilir. Motor zaten calisiyorsa ikinci kopya
+  acilmaz, mevcut PID yazilir.
+- **Motoru_Durdur.command** — cift tiklayin: motor guvenli sekilde kapanir
+  (settler durur, panel durumu sifirlanir). 20 sn icinde kapanmazsa zorlanir.
+
+Terminalden ayni islemler:
+
+```bash
+./tools/motor_ctl.sh baslat    # baslat
+./tools/motor_ctl.sh durum     # calisiyor mu
+./tools/motor_ctl.sh durdur    # guvenli kapat
+./tools/motor_ctl.sh yeniden   # durdur + baslat
+```
+
+Log: `database/motor.log` · PID: `database/motor.pid`
