@@ -98,6 +98,13 @@ class PulseMessageTests(unittest.TestCase):
         self.assertIn("Kalan 498", message)
         self.assertIn("gercek kupon acilmiyor", message)
 
+    def test_scan_disabled_message_says_scan_off(self) -> None:
+        report_patch, credit_patch = self._patch_sources(measured=0)
+        with report_patch, credit_patch:
+            message = olcum_nabzi.build_pulse_message(scan_enabled=False)
+        self.assertIn("TARAMA KAPALI", message)
+        self.assertNotIn("tarama turu", message)
+
     def test_proof_threshold_reached_message(self) -> None:
         report_patch, credit_patch = self._patch_sources(measured=30)
         with report_patch, credit_patch:
