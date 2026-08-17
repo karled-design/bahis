@@ -15,6 +15,7 @@ from config.settings import (
     MAX_EV_THRESHOLD,
     PANEL_PORT,
     SCAN_INTERVAL_SECONDS,
+    resolve_scan_interval_seconds,
 )
 from core.hero_mode import bootstrap_hero_mode, build_hero_panel_payload, is_hero_mode_enabled
 from core.hero_measurement import record_hero_measurement_scan_day
@@ -838,8 +839,13 @@ def main() -> None:
                 time.sleep(10)
                 continue
 
+            measurement_mode = is_measurement_mode_enabled()
+            scan_interval = resolve_scan_interval_seconds(measurement_mode=measurement_mode)
             print("--- [SQE-V1] Canli Piyasa Taramasi Baslatildi ---")
-            print(f"[SQE-V1] Tarama Frekansi: {SCAN_INTERVAL_SECONDS}sn")
+            print(
+                f"[SQE-V1] Tarama Frekansi: {scan_interval}sn"
+                + (" (olcum modu hizli tempo | ek kredi yok)" if measurement_mode else "")
+            )
 
             current_kasa = get_latest_bakiye()
             cycle_id = _reset_scan_cycle_state(notified_registry, current_kasa)
@@ -1003,7 +1009,7 @@ def main() -> None:
 
             print(_format_scan_cycle_summary(cycle_stats))
 
-            if is_measurement_mode_enabled():
+            if measurement_mode:
                 # Huni: hangi asamada kac aday eledik. Esikleri degistirmeden
                 # once darbogazin nerede oldugunu bu tablo gosterir.
                 record_scan_funnel(dict(cycle_stats), cycle_id=cycle_id or "")
@@ -1021,7 +1027,7 @@ def main() -> None:
                     f"hala_bekleyen={settlement_stats['waiting']} | kasa={refreshed_kasa} TL"
                 )
 
-            time.sleep(SCAN_INTERVAL_SECONDS)
+            time.sleep(scan_interval)
     finally:
         _graceful_shutdown(auto_settler_stop, auto_settler_thread)
 
