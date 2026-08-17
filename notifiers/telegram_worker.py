@@ -1418,8 +1418,12 @@ def send_scan_empty_report(cycle_stats: ScanCycleStats | None = None) -> bool:
     return sent
 
 
-def wait_for_scan_start(poll_interval_seconds: float = 1.0) -> bool:
-    """Block until scan_enabled becomes True.
+def wait_for_scan_start(
+    poll_interval_seconds: float = 1.0,
+    *,
+    timeout_seconds: float | None = None,
+) -> bool:
+    """Block until scan_enabled becomes True; `timeout_seconds` dolarsa False.
 
     Telegram updates are handled only by the background listener thread.
     Do not call getUpdates here — a second poll causes HTTP 409 conflict and
@@ -1428,9 +1432,12 @@ def wait_for_scan_start(poll_interval_seconds: float = 1.0) -> bool:
     _prepare_polling_session()
     start_telegram_listener(poll_interval_seconds=poll_interval_seconds)
 
+    deadline = None if timeout_seconds is None else time.monotonic() + float(timeout_seconds)
     while True:
         if bool(SISTEM_DURUMU.get("scan_enabled", False)):
             return True
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
         time.sleep(poll_interval_seconds)
 
 

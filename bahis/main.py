@@ -821,7 +821,12 @@ def main() -> None:
         print("[SQE-V1] Sistem hazir | Telegram: [Taramayi Baslat] bekleniyor")
 
         while not scanning_active:
-            if telegram_worker.wait_for_scan_start():
+            # Tarama henuz acilmadiysa da nabiz atsin: aksi halde motor ayakta
+            # oldugu halde Telegram tamamen sessiz kalir.
+            maybe_send_measurement_pulse(
+                telegram_worker.send_hero_daily_notice, scan_enabled=False
+            )
+            if telegram_worker.wait_for_scan_start(timeout_seconds=30.0):
                 scanning_active = True
                 current_kasa = get_latest_bakiye()
                 update_sistem_durumu(is_live=True, total_kasa=current_kasa)
