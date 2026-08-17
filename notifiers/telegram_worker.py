@@ -1427,9 +1427,10 @@ def wait_for_scan_start(
 
     Telegram updates are handled only by the background listener thread.
     Do not call getUpdates here — a second poll causes HTTP 409 conflict and
-    the start button is never processed.
+    the start button is never processed. Ayni sebeple oturum sifirlamasi da
+    yalnizca dinleyici ilk kez baslatilirken yapilir (tekrarli cagrilarda
+    getUpdates kuyrugu bosaltilirsa dinleyici 409 alir).
     """
-    _prepare_polling_session()
     start_telegram_listener(poll_interval_seconds=poll_interval_seconds)
 
     deadline = None if timeout_seconds is None else time.monotonic() + float(timeout_seconds)
