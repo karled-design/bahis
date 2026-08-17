@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import logging
+import signal
 import socket
 import sys
 import threading
 import time
+from types import FrameType
 from datetime import datetime, timezone
 from typing import TypedDict
 
@@ -1032,7 +1034,15 @@ def main() -> None:
         _graceful_shutdown(auto_settler_stop, auto_settler_thread)
 
 
+def _raise_keyboard_interrupt(signum: int, frame: FrameType | None) -> None:
+    """SIGTERM'i SIGINT ile ayni yola sokar: durdurma betigi de temiz kapatir."""
+    del frame
+    print(f"[SQE-V1] Kapatma sinyali alindi ({signum}) | guvenli kapanis basliyor")
+    raise KeyboardInterrupt
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
     try:
         main()
     except KeyboardInterrupt:

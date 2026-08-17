@@ -17,6 +17,8 @@ database/*.jsonl
 database/*.db.backup-*
 database/feed_snapshots/
 database/backups/
+database/motor.pid
+database/motor.log
 
 # Elle alınan yedekler: sürüm geçmişi git'te tutulur, klasör depoya girmez.
 yedekler/
