@@ -65,6 +65,26 @@ class MotorCtlTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn("zaten kapali", result.stdout)
 
+    def test_baslat_kills_foreign_motor_processes(self) -> None:
+        # Ayni makinede ikinci bir motor Telegram'da 409 cakismasi yaratiyor:
+        # baslat once eski surecleri kapatmali.
+        marker = f"sqe_sahte_motor_{os.getpid()}"
+        # `; true` sayesinde bash exec optimizasyonu yapmaz, isaretci komut
+        # satirinda kalir ve pgrep -f bulabilir.
+        fake = subprocess.Popen(["bash", "-c", "sleep 120; true", marker])
+        self.addCleanup(fake.kill)
+
+        env = dict(os.environ, MOTOR_SUREC_DESENI=marker, MOTOR_KILL_TIMEOUT="5")
+        subprocess.run(
+            ["bash", str(self.script), "baslat"],
+            capture_output=True,
+            text=True,
+            timeout=60,
+            env=env,
+        )
+
+        fake.wait(timeout=15)
+
     def test_unknown_command_reports_usage(self) -> None:
         result = _run(self.script, "havaya-ucur")
         self.assertEqual(result.returncode, 2)
