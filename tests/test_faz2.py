@@ -146,6 +146,30 @@ class TelegramFormatTests(unittest.TestCase):
         start_listener.assert_called_once()
         fetch_updates.assert_not_called()
 
+    def test_wait_for_scan_start_returns_false_on_timeout(self) -> None:
+        from notifiers import telegram_worker
+        from ui.web_server import update_sistem_durumu
+
+        update_sistem_durumu(scan_enabled=False)
+        with mock.patch.object(telegram_worker, "start_telegram_listener"):
+            started = telegram_worker.wait_for_scan_start(
+                poll_interval_seconds=0.01, timeout_seconds=0.05
+            )
+        self.assertFalse(started)
+
+    def test_repeated_wait_calls_do_not_reset_polling_session(self) -> None:
+        from notifiers import telegram_worker
+        from ui.web_server import update_sistem_durumu
+
+        update_sistem_durumu(scan_enabled=False)
+        with mock.patch.object(telegram_worker, "_prepare_polling_session") as prepare:
+            with mock.patch.object(telegram_worker, "start_telegram_listener"):
+                for _ in range(3):
+                    telegram_worker.wait_for_scan_start(
+                        poll_interval_seconds=0.01, timeout_seconds=0.02
+                    )
+        prepare.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

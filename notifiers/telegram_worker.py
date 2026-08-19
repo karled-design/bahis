@@ -59,13 +59,16 @@ _GET_UPDATES_POLL_SECONDS = 25
 _GET_UPDATES_SOCKET_TIMEOUT_SECONDS = _GET_UPDATES_POLL_SECONDS + 10
 _TELEGRAM_RECONNECT_FAILURE_THRESHOLD = 3
 _CONFLICT_HEAL_DELAY_SECONDS = 3.0
+_CONFLICT_BACKOFF_MAX_SECONDS = 60.0
 _CONFLICT_HEAL_DIAG = "Teşhis: Telegram çakışması otonom olarak onarıldı"
 _CONFLICT_HEAL_ESCALATION_DIAG = (
-    "Teşhis: Telegram cakismasi suruyor. Motoru durdurup calistirin: "
-    "PYTHONPATH=. python reset_telegram.py"
+    "Teşhis: Ayni Telegram token'i ile baska bir motor daha getUpdates yapiyor "
+    "(orn. Mac'teki Motoru_Baslat). Butonlar calismaz; birini kapatin ya da "
+    "ikinci makineye ayri bir TELEGRAM_TOKEN verin. Bildirim gonderimi etkilenmez."
 )
 _CONFLICT_HEAL_ESCALATION_THRESHOLD = 5
 _CONFLICT_HEAL_COUNT = 0
+_CONFLICT_ESCALATION_NOTIFIED = False
 _MAX_CALLBACK_DATA_BYTES = 64
 _START_SCAN_CALLBACK = "start_scan"
 _ALERT_TTL_SECONDS = 900
@@ -124,8 +127,10 @@ def _is_long_poll_timeout(exc: BaseException) -> bool:
 
 
 def _note_telegram_transport_success() -> None:
-    global _TELEGRAM_CONSECUTIVE_FAILURES
+    global _TELEGRAM_CONSECUTIVE_FAILURES, _CONFLICT_HEAL_COUNT, _CONFLICT_ESCALATION_NOTIFIED
     _TELEGRAM_CONSECUTIVE_FAILURES = 0
+    _CONFLICT_HEAL_COUNT = 0
+    _CONFLICT_ESCALATION_NOTIFIED = False
 
 
 def _note_telegram_transport_failure(detail: str) -> None:
@@ -177,17 +182,40 @@ def _prepare_polling_session() -> None:
     reset_telegram_api_session(drop_pending_updates=True)
 
 
+def _conflict_backoff_seconds(attempt: int) -> float:
+    """Ust uste 409'larda bekleme suresi: 3, 6, 12 ... en fazla 60 sn."""
+    if attempt <= 1:
+        return _CONFLICT_HEAL_DELAY_SECONDS
+    return min(
+        _CONFLICT_BACKOFF_MAX_SECONDS,
+        _CONFLICT_HEAL_DELAY_SECONDS * (2.0 ** (attempt - 1)),
+    )
+
+
 def _self_heal_telegram_conflict() -> None:
-    global _CONFLICT_HEAL_COUNT
+    """409 tedavisi: ilk denemede oturumu sifirla, sonrasinda sadece geri cekil.
+
+    Tekrarli sifirlama karsi taraftaki instance'i da 409'a dusurdugu icin iki
+    motor birbirini surekli kesip sonsuz bir cakisma dongusu yaratiyordu.
+    """
+    global _CONFLICT_HEAL_COUNT, _CONFLICT_ESCALATION_NOTIFIED
 
     from notifiers.telegram_reset import drain_telegram_update_queue, reset_telegram_api_session
 
-    time.sleep(_CONFLICT_HEAL_DELAY_SECONDS)
-    reset_telegram_api_session(drop_pending_updates=True)
-    drain_telegram_update_queue()
     _CONFLICT_HEAL_COUNT += 1
-    print(_CONFLICT_HEAL_DIAG)
-    if _CONFLICT_HEAL_COUNT >= _CONFLICT_HEAL_ESCALATION_THRESHOLD:
+    time.sleep(_conflict_backoff_seconds(_CONFLICT_HEAL_COUNT))
+
+    if _CONFLICT_HEAL_COUNT == 1:
+        reset_telegram_api_session(drop_pending_updates=True)
+        drain_telegram_update_queue()
+        print(_CONFLICT_HEAL_DIAG)
+        return
+
+    if (
+        _CONFLICT_HEAL_COUNT >= _CONFLICT_HEAL_ESCALATION_THRESHOLD
+        and not _CONFLICT_ESCALATION_NOTIFIED
+    ):
+        _CONFLICT_ESCALATION_NOTIFIED = True
         print(_CONFLICT_HEAL_ESCALATION_DIAG, file=sys.stderr)
 
 
@@ -1418,19 +1446,27 @@ def send_scan_empty_report(cycle_stats: ScanCycleStats | None = None) -> bool:
     return sent
 
 
-def wait_for_scan_start(poll_interval_seconds: float = 1.0) -> bool:
-    """Block until scan_enabled becomes True.
+def wait_for_scan_start(
+    poll_interval_seconds: float = 1.0,
+    *,
+    timeout_seconds: float | None = None,
+) -> bool:
+    """Block until scan_enabled becomes True; `timeout_seconds` dolarsa False.
 
     Telegram updates are handled only by the background listener thread.
     Do not call getUpdates here — a second poll causes HTTP 409 conflict and
-    the start button is never processed.
+    the start button is never processed. Ayni sebeple oturum sifirlamasi da
+    yalnizca dinleyici ilk kez baslatilirken yapilir (tekrarli cagrilarda
+    getUpdates kuyrugu bosaltilirsa dinleyici 409 alir).
     """
-    _prepare_polling_session()
     start_telegram_listener(poll_interval_seconds=poll_interval_seconds)
 
+    deadline = None if timeout_seconds is None else time.monotonic() + float(timeout_seconds)
     while True:
         if bool(SISTEM_DURUMU.get("scan_enabled", False)):
             return True
+        if deadline is not None and time.monotonic() >= deadline:
+            return False
         time.sleep(poll_interval_seconds)
 
 

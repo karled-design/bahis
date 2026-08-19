@@ -8,6 +8,12 @@ PID_DOSYASI="${PROJE_DIZINI}/database/motor.pid"
 LOG_DOSYASI="${PROJE_DIZINI}/database/motor.log"
 PANEL_URL="http://127.0.0.1:${PANEL_PORT:-8765}"
 KAPANIS_BEKLEME_SANIYE="${MOTOR_STOP_TIMEOUT:-20}"
+# Ayni makinede birden fazla motor Telegram'da 409 cakismasi yaratir: baslarken temizlenir.
+SUREC_DESENI="${MOTOR_SUREC_DESENI:-python.*bahis/main\.py}"
+YABANCI_KAPANIS_BEKLEME="${MOTOR_KILL_TIMEOUT:-10}"
+# Sadece gercekten python calistiran surecler kapatilir: komut satirinda ayni
+# metni tasiyan bir grep/tail/editor yanlislikla oldurulmesin.
+CALISTIRILABILIR_DESENI="${MOTOR_SUREC_KOMUTU:-*python*}"
 
 python_bul() {
   if [ -x "${PROJE_DIZINI}/.venv/bin/python" ]; then
@@ -39,12 +45,65 @@ calisan_pid() {
   echo "${pid}"
 }
 
+yabanci_motorlari_kapat() {
+  # PID dosyasindaki motor disinda kalan tum motor sureclerini kapatir (elle
+  # baslatilmis, eski dizinden calisan veya PID dosyasi kaybolmus kopyalar).
+  local korunan="${1:-}"
+  command -v pgrep >/dev/null 2>&1 || return 0
+
+  local pids
+  pids="$(pgrep -f "${SUREC_DESENI}" 2>/dev/null || true)"
+  [ -n "${pids}" ] || return 0
+
+  # Bu betigi calistiran kabuk/terminal komut satirinda ayni deseni tasiyabilir;
+  # kendi soy agacimizi asla kapatmayiz.
+  local atalar=" $$ " gecici="$$"
+  while [ -n "${gecici}" ] && [ "${gecici}" != "0" ] && [ "${gecici}" != "1" ]; do
+    gecici="$(ps -p "${gecici}" -o ppid= 2>/dev/null | tr -d ' ')"
+    [ -n "${gecici}" ] || break
+    atalar="${atalar}${gecici} "
+  done
+
+  local pid kapatilan=0
+  for pid in ${pids}; do
+    case "${atalar}" in
+      *" ${pid} "*) continue ;;
+    esac
+    if [ -n "${korunan}" ] && [ "${pid}" = "${korunan}" ]; then
+      continue
+    fi
+    case "$(ps -p "${pid}" -o comm= 2>/dev/null)" in
+      ${CALISTIRILABILIR_DESENI}) ;;
+      *) continue ;;
+    esac
+    kill -TERM "${pid}" 2>/dev/null || continue
+    kapatilan=$((kapatilan + 1))
+
+    local bekleme=0
+    while kill -0 "${pid}" 2>/dev/null; do
+      if [ "${bekleme}" -ge "${YABANCI_KAPANIS_BEKLEME}" ]; then
+        kill -KILL "${pid}" 2>/dev/null || true
+        break
+      fi
+      sleep 1
+      bekleme=$((bekleme + 1))
+    done
+  done
+
+  if [ "${kapatilan}" -gt 0 ]; then
+    echo "[SQE-V1] ${kapatilan} eski motor kapatildi (tek instance korunuyor)."
+  fi
+}
+
 baslat() {
   local mevcut
   if mevcut="$(calisan_pid)"; then
+    yabanci_motorlari_kapat "${mevcut}"
     echo "[SQE-V1] Motor zaten calisiyor | PID=${mevcut} | Panel: ${PANEL_URL}"
     return 0
   fi
+
+  yabanci_motorlari_kapat
 
   local python_yolu
   python_yolu="$(python_bul)"

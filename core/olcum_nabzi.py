@@ -123,7 +123,7 @@ def _funnel_line(stats: dict[str, int]) -> str:
     )
 
 
-def build_pulse_message() -> str:
+def build_pulse_message(*, scan_enabled: bool = True) -> str:
     card = report()
     total = card.get("toplam", {})
     signal_count = int(total.get("sinyal", 0) or 0)
@@ -137,7 +137,11 @@ def build_pulse_message() -> str:
     lines = [
         f"OLCUM NABZI — {_now_tr().strftime('%d.%m %H:%M')}",
         "",
-        f"Motor: calisiyor | son nabizdan beri {_cycle_counter} tarama turu",
+        (
+            f"Motor: calisiyor | son nabizdan beri {_cycle_counter} tarama turu"
+            if scan_enabled
+            else "Motor: calisiyor | TARAMA KAPALI — Telegram'dan [Taramayi Baslat]"
+        ),
         _funnel_line(_last_cycle_stats),
         "",
         f"Olcum karnesi: {signal_count} sinyal | {measured} tanesi CLV ile olculdu",
@@ -159,7 +163,9 @@ def build_pulse_message() -> str:
     return "\n".join(lines)
 
 
-def maybe_send_measurement_pulse(send_func: Callable[[str], bool]) -> bool:
+def maybe_send_measurement_pulse(
+    send_func: Callable[[str], bool], *, scan_enabled: bool = True
+) -> bool:
     """Zamani geldiyse nabiz mesajini kurar ve yollar; aksi halde hemen doner."""
     global _last_attempt_monotonic, _cycle_counter
 
@@ -170,7 +176,7 @@ def maybe_send_measurement_pulse(send_func: Callable[[str], bool]) -> bool:
     _last_attempt_monotonic = time.monotonic()
 
     try:
-        message = build_pulse_message()
+        message = build_pulse_message(scan_enabled=scan_enabled)
     except Exception as exc:  # nabiz kurulamazsa motoru asla dusurme
         print(f"[SQE-V1] Olcum nabzi olusturulamadi | {exc}")
         return False
