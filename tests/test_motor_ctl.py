@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -69,10 +70,14 @@ class MotorCtlTests(unittest.TestCase):
         # Ayni makinede ikinci bir motor Telegram'da 409 cakismasi yaratiyor:
         # baslat once eski surecleri kapatmali.
         marker = f"sqe_sahte_motor_{os.getpid()}"
-        # `; true` sayesinde bash exec optimizasyonu yapmaz, isaretci komut
-        # satirinda kalir ve pgrep -f bulabilir.
-        fake = subprocess.Popen(["bash", "-c", "sleep 120; true", marker])
+        fake = subprocess.Popen(
+            [sys.executable, "-c", f"import time; time.sleep(120)  # {marker}"]
+        )
         self.addCleanup(fake.kill)
+        # Komut satirinda ayni metin gecen ama python olmayan surec: dokunulmamali.
+        # `; true` bash'in exec optimizasyonunu engeller, isaretci cmdline'da kalir.
+        bystander = subprocess.Popen(["bash", "-c", f"sleep 120; true # {marker}"])
+        self.addCleanup(bystander.kill)
 
         env = dict(os.environ, MOTOR_SUREC_DESENI=marker, MOTOR_KILL_TIMEOUT="5")
         subprocess.run(
@@ -84,6 +89,7 @@ class MotorCtlTests(unittest.TestCase):
         )
 
         fake.wait(timeout=15)
+        self.assertIsNone(bystander.poll(), "python olmayan surec kapatilmamaliydi")
 
     def test_unknown_command_reports_usage(self) -> None:
         result = _run(self.script, "havaya-ucur")

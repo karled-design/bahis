@@ -11,6 +11,9 @@ KAPANIS_BEKLEME_SANIYE="${MOTOR_STOP_TIMEOUT:-20}"
 # Ayni makinede birden fazla motor Telegram'da 409 cakismasi yaratir: baslarken temizlenir.
 SUREC_DESENI="${MOTOR_SUREC_DESENI:-python.*bahis/main\.py}"
 YABANCI_KAPANIS_BEKLEME="${MOTOR_KILL_TIMEOUT:-10}"
+# Sadece gercekten python calistiran surecler kapatilir: komut satirinda ayni
+# metni tasiyan bir grep/tail/editor yanlislikla oldurulmesin.
+CALISTIRILABILIR_DESENI="${MOTOR_SUREC_KOMUTU:-*python*}"
 
 python_bul() {
   if [ -x "${PROJE_DIZINI}/.venv/bin/python" ]; then
@@ -69,6 +72,10 @@ yabanci_motorlari_kapat() {
     if [ -n "${korunan}" ] && [ "${pid}" = "${korunan}" ]; then
       continue
     fi
+    case "$(ps -p "${pid}" -o comm= 2>/dev/null)" in
+      ${CALISTIRILABILIR_DESENI}) ;;
+      *) continue ;;
+    esac
     kill -TERM "${pid}" 2>/dev/null || continue
     kapatilan=$((kapatilan + 1))
 
