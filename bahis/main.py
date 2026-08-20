@@ -423,15 +423,16 @@ def _dispatch_scan_notifications(
                 )
                 continue
 
-        # Olcum modu: mesaj gider ama "Oyna" dugmesi cikmaz (match_id/stake yok),
-        # boylece kupon acilamaz ve bakiye degismez.
+        # Olcum modu: mesaj ve dugmeler gider ama tutar gonderilmez; tutarsiz
+        # bildirimde "Oynadim" yalnizca isaret birakir, kupon acilamaz ve
+        # bakiye degismez. "Ertele" her iki modda da calisir.
         measuring = is_measurement_mode_enabled()
         is_watch = tier == "WATCH"
         no_play = is_watch or measuring
         match_record = candidate.get("match_record") if isinstance(candidate.get("match_record"), dict) else {}
         sent = telegram_worker.send_alert(
             message=candidate["alert_message"],
-            match_id=None if no_play else candidate["match_id"],
+            match_id=candidate["match_id"],
             stake=None if no_play else candidate["stake"],
             soft_odds=candidate["soft_odds"],
             mac_adi=candidate["match_name"],

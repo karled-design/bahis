@@ -5,6 +5,8 @@ __all__ = (
     "record_fixture_telegram_sent",
 )
 
+from core.match_filters import build_match_id_from_notification_key
+from core.notify_snooze import consume_expired_snooze, is_snoozed
 from database.db_manager import (
     has_any_kupon_for_fixture,
     was_fixture_recently_notified,
@@ -26,6 +28,13 @@ def should_skip_fixture_telegram(
 
     if has_any_kupon_for_fixture(mac_adi, market):
         return True, "fixture_kupon_mevcut"
+
+    match_id = build_match_id_from_notification_key(notify_key)
+    if is_snoozed(match_id):
+        return True, "fixture_ertelendi"
+    if consume_expired_snooze(match_id):
+        # Erteleme suresi doldu: tek seferlik hatirlatma icin dedup atlanir.
+        return False, ""
 
     if was_fixture_recently_notified(
         notify_key,

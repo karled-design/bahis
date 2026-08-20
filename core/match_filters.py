@@ -26,6 +26,7 @@ __all__ = (
     "ScanCycleState",
     "SCAN_CYCLE",
     "SUSPICIOUS_ODDS_RATIO_THRESHOLD",
+    "build_match_id_from_notification_key",
     "build_notification_key",
     "build_stable_match_id",
     "is_feed_timestamp_fresh",
@@ -89,12 +90,18 @@ def build_notification_key(match_name: str, market: str) -> str:
     return f"{normalized}|{market_key}"
 
 
-def build_stable_match_id(match_name: str, market: str) -> str:
+def build_match_id_from_notification_key(notify_key: str) -> str:
     slug = "".join(
         character if character.isascii() and character.isalnum() else "_"
-        for character in build_notification_key(match_name, market)
+        for character in notify_key
     ).strip("_")
     return slug or "mac"
+
+
+def build_stable_match_id(match_name: str, market: str) -> str:
+    return build_match_id_from_notification_key(
+        build_notification_key(match_name, market)
+    )
 
 
 def is_feed_timestamp_fresh(

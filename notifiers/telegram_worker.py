@@ -311,20 +311,52 @@ def _fit_callback_data(data: str) -> str:
     return trimmed or "skip_mac"
 
 
-def _build_inline_keyboard(match_id: str, stake: float) -> dict[str, Any]:
+def _build_inline_keyboard(match_id: str, stake: float | None) -> dict[str, Any]:
     safe_match_id = _normalize_match_id(match_id)
+    snooze_button = {
+        "text": "⏰ Ertele",
+        "callback_data": _fit_callback_data(f"snooze_{safe_match_id}"),
+    }
+
+    # Para hareketi mumkun degilse (olcum/test modu ya da tutarsiz sinyal)
+    # "Oynadim" yalnizca isaret birakir: kupon acilmaz, bakiye degismez.
+    if stake is None or _is_no_money_mode():
+        return {
+            "inline_keyboard": [
+                [
+                    {
+                        "text": "✅ Oynadım",
+                        "callback_data": _fit_callback_data(f"mark_{safe_match_id}"),
+                    },
+                    snooze_button,
+                ]
+            ]
+        }
+
     stake_value = round(float(stake), 2)
-    play_callback = _fit_callback_data(f"play_{safe_match_id}_{stake_value}")
-    skip_callback = _fit_callback_data(f"skip_{safe_match_id}")
-    play_label = "✅ Oynadım"
     return {
         "inline_keyboard": [
             [
-                {"text": play_label, "callback_data": play_callback},
-                {"text": "❌ Pas Geç", "callback_data": skip_callback},
-            ]
+                {
+                    "text": "✅ Oynadım",
+                    "callback_data": _fit_callback_data(f"play_{safe_match_id}_{stake_value}"),
+                },
+                snooze_button,
+            ],
+            [
+                {
+                    "text": "❌ Pas Geç",
+                    "callback_data": _fit_callback_data(f"skip_{safe_match_id}"),
+                }
+            ],
         ]
     }
+
+
+def _is_no_money_mode() -> bool:
+    from core.measurement_mode import is_measurement_mode_enabled
+
+    return bool(PILOT_MODE) or is_measurement_mode_enabled()
 
 
 def _build_message_payload(
@@ -336,10 +368,8 @@ def _build_message_payload(
         "chat_id": TELEGRAM_CHAT_ID,
         "text": text,
     }
-    # Test modunda "Oyna" dugmesi gosterilmez: sanal kupon otomatik kaydedilir,
-    # dugme yalnizca kafa karistirir. Gercek modda (PILOT_MODE=False) aynen kalir.
-    if match_id is not None and stake is not None and not PILOT_MODE:
-        payload["reply_markup"] = _build_inline_keyboard(str(match_id), float(stake))
+    if match_id is not None:
+        payload["reply_markup"] = _build_inline_keyboard(str(match_id), stake)
     return payload
 
 
@@ -610,6 +640,13 @@ def _parse_skip_callback(callback_data: str) -> str | None:
     return match_part or None
 
 
+def _parse_prefixed_callback(callback_data: str, prefix: str) -> str | None:
+    if not callback_data.startswith(prefix):
+        return None
+    match_part = callback_data[len(prefix):]
+    return match_part or None
+
+
 def _claim_callback_once(callback_id: str | None) -> bool:
     if not isinstance(callback_id, str) or not callback_id.strip():
         return True
@@ -783,6 +820,59 @@ def _handle_skip_callback(callback: dict[str, Any], callback_data: str) -> bool:
         return False
 
 
+def _handle_snooze_callback(callback: dict[str, Any], callback_data: str) -> bool:
+    from core.notify_snooze import DEFAULT_SNOOZE_SECONDS, snooze_match
+
+    match_key = _parse_prefixed_callback(callback_data, "snooze_")
+    if match_key is None:
+        _emit_kupon_diag(f"invalid snooze callback | {callback_data}")
+        return False
+
+    due = snooze_match(match_key)
+    _clear_inline_buttons(callback)
+    if due is None:
+        _send_operator_notice("Erteleme kaydedilemedi; sinyal aynen kaliyor.")
+        return False
+
+    minutes = int(DEFAULT_SNOOZE_SECONDS // 60)
+    _send_operator_notice(
+        f"Ertelendi: bu mac icin {minutes} dk boyunca bildirim gelmeyecek, "
+        "sure dolunca bir kez hatirlatilacak."
+    )
+    return True
+
+
+def _handle_mark_callback(callback: dict[str, Any], callback_data: str) -> bool:
+    """Olcum/test modunda 'Oynadim': yalnizca isaret birakir, kupon acmaz."""
+    from core.manual_play_ledger import mark_played
+
+    match_key = _parse_prefixed_callback(callback_data, "mark_")
+    if match_key is None:
+        _emit_kupon_diag(f"invalid mark callback | {callback_data}")
+        return False
+
+    if is_virtual_match_text(match_key):
+        _emit_kupon_diag(f"E-Futbol callback engellendi | {callback_data}")
+        _clear_inline_buttons(callback)
+        return False
+
+    context = _get_alert_context(match_key, "")
+    recorded = mark_played(
+        match_key,
+        mac_adi=str(context.get("mac_adi", "")),
+        market=str(context.get("market", "")),
+    )
+    _clear_inline_buttons(callback)
+    if recorded:
+        _send_operator_notice(
+            "Oynadim olarak isaretlendi. Olcum modunda kupon acilmaz ve bakiye "
+            "degismez; sinyalin CLV takibi devam ediyor."
+        )
+    else:
+        _send_operator_notice("Bu sinyal zaten 'oynadim' olarak isaretliydi.")
+    return True
+
+
 def play_recommendation_from_panel(
     match_id: str,
     alinan_oran: float | None = None,
@@ -946,6 +1036,14 @@ def _process_callback_query(callback: dict[str, Any]) -> bool:
     if not isinstance(callback_data, str):
         return False
 
+    message = callback.get("message")
+    if isinstance(message, dict):
+        chat = message.get("chat")
+        if isinstance(chat, dict) and chat.get("id") is not None:
+            if not _is_operator_chat(chat.get("id")):
+                _emit_kupon_diag("yetkisiz callback engellendi")
+                return False
+
     if callback_data == _START_SCAN_CALLBACK:
         _set_scan_enabled(True)
         return True
@@ -955,6 +1053,12 @@ def _process_callback_query(callback: dict[str, Any]) -> bool:
 
     if callback_data.startswith("skip_"):
         return _handle_skip_callback(callback, callback_data)
+
+    if callback_data.startswith("snooze_"):
+        return _handle_snooze_callback(callback, callback_data)
+
+    if callback_data.startswith("mark_"):
+        return _handle_mark_callback(callback, callback_data)
 
     return False
 
