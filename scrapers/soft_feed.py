@@ -28,6 +28,8 @@ _PLAYWRIGHT_INSTALL_HINT = (
     "[SQE-V1] Playwright tarayici eksik | Kurulum: playwright install chrome"
 )
 _MAX_RESPONSE_BYTES = 5_000_000
+_PREMATCH_HARD_LIMIT_BYTES = 64_000_000
+_PREMATCH_CHUNK_BYTES = 1_000_000
 _PLAYWRIGHT_WARMUP_MS = 2_000
 _PLAYWRIGHT_NAV_TIMEOUT_MS = max(SOFT_MARKET_LAG_TIMEOUT * 1000 * 3, 45_000)
 _PLAYWRIGHT_API_TIMEOUT_MS = max(SOFT_MARKET_LAG_TIMEOUT * 1000 * 2, 20_000)
@@ -155,6 +157,21 @@ def _is_prematch_special_match(home: str, away: str, match_name: str) -> bool:
     return any(fragment in blob for fragment in _PREMATCH_SKIP_FRAGMENTS)
 
 
+def _read_stream_fully(stream: Any, hard_limit_bytes: int) -> bytes | None:
+    """Yaniti sonuna kadar okur; sinir asilirsa kirpmak yerine None doner."""
+    chunks: list[bytes] = []
+    total = 0
+    while True:
+        chunk = stream.read(_PREMATCH_CHUNK_BYTES)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > hard_limit_bytes:
+            return None
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
 def _fetch_nesine_prematch_json() -> dict[str, Any] | None:
     request = urllib.request.Request(
         _PREMATCH_FULL_URL,
@@ -167,10 +184,16 @@ def _fetch_nesine_prematch_json() -> dict[str, Any] | None:
     )
     try:
         with urllib.request.urlopen(request, timeout=SOFT_MARKET_LAG_TIMEOUT) as response:
-            raw = response.read(8_000_000).decode("utf-8", errors="replace")
+            payload_bytes = _read_stream_fully(response, _PREMATCH_HARD_LIMIT_BYTES)
     except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, OSError) as exc:
         _emit_operator_diag(f"nesine prematch | {exc}")
         return None
+
+    if payload_bytes is None:
+        _emit_operator_diag("nesine prematch | yanit guvenlik siniri asildi")
+        return None
+
+    raw = payload_bytes.decode("utf-8", errors="replace")
 
     if _looks_like_html(raw):
         _emit_operator_diag("nesine prematch | HTML yanit")
@@ -279,7 +302,8 @@ async def _fetch_via_context_request(context: Any, source: dict[str, str]) -> st
         _emit_operator_diag(f"{source['name']} | {api_url} | unexpected HTTP status {status_code}")
         return None
     if len(raw.encode("utf-8", errors="replace")) > _MAX_RESPONSE_BYTES:
-        raw = raw[:_MAX_RESPONSE_BYTES]
+        _emit_operator_diag(f"{source['name']} | {api_url} | yanit guvenlik siniri asildi")
+        return None
     return raw
 
 
@@ -315,7 +339,8 @@ async def _fetch_via_browser_fetch(context: Any, source: dict[str, str]) -> str 
             _emit_operator_diag(f"{source['name']} | {api_url} | unexpected HTTP status {status_code}")
             return None
         if len(raw.encode("utf-8", errors="replace")) > _MAX_RESPONSE_BYTES:
-            raw = raw[:_MAX_RESPONSE_BYTES]
+            _emit_operator_diag(f"{source['name']} | {api_url} | yanit guvenlik siniri asildi")
+            return None
         return raw
     finally:
         await page.close()
