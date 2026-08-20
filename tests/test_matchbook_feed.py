@@ -60,6 +60,22 @@ def _totals_market(line: float = 2.5, **overrides: Any) -> dict[str, Any]:
     return market
 
 
+def _btts_market(**overrides: Any) -> dict[str, Any]:
+    market: dict[str, Any] = {
+        "market-type": "both_to_score",
+        "name": "Both Teams To Score",
+        "status": "open",
+        "in-running-flag": False,
+        "volume": 1500.0,
+        "runners": [
+            _runner("Yes", 1.80, 1.86),
+            _runner("No", 2.10, 2.18),
+        ],
+    }
+    market.update(overrides)
+    return market
+
+
 def _event(markets: list[dict[str, Any]], **overrides: Any) -> dict[str, Any]:
     event: dict[str, Any] = {
         "id": 991,
@@ -98,9 +114,9 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(len(probabilities), 3)
         self.assertAlmostEqual(sum(probabilities), 1.0, places=5)
 
-    def test_only_the_two_and_a_half_line_is_taken(self) -> None:
+    def test_only_lines_sold_by_nesine_are_taken(self) -> None:
         records = normalize_matchbook_events(
-            [_event([_totals_market(2.5), _totals_market(3.5)])], observed_at=1000.0
+            [_event([_totals_market(2.5), _totals_market(0.5)])], observed_at=1000.0
         )
 
         self.assertEqual(
@@ -140,6 +156,56 @@ class NormalizationTests(unittest.TestCase):
         records = normalize_matchbook_events([_event([market])], observed_at=1000.0)
 
         self.assertEqual(list(records), ["991:X"])
+
+
+class MarketCoverageTests(unittest.TestCase):
+    def test_supported_totals_lines_are_normalized(self) -> None:
+        records = normalize_matchbook_events(
+            [
+                _event(
+                    [
+                        _totals_market(1.5),
+                        _totals_market(2.5),
+                        _totals_market(3.5),
+                    ]
+                )
+            ],
+            observed_at=1000.0,
+        )
+
+        self.assertEqual(
+            sorted(records),
+            [
+                "991:ALT 1.5",
+                "991:ALT 2.5",
+                "991:ALT 3.5",
+                "991:UST 1.5",
+                "991:UST 2.5",
+                "991:UST 3.5",
+            ],
+        )
+
+    def test_line_without_nesine_counterpart_is_ignored(self) -> None:
+        records = normalize_matchbook_events(
+            [_event([_totals_market(4.5)])], observed_at=1000.0
+        )
+
+        self.assertEqual(records, {})
+
+    def test_both_teams_to_score_maps_to_kg_markets(self) -> None:
+        records = normalize_matchbook_events(
+            [_event([_btts_market()])], observed_at=1000.0
+        )
+
+        self.assertEqual(sorted(records), ["991:KG VAR", "991:KG YOK"])
+        self.assertGreater(float(records["991:KG VAR"]["sharp_odds"]), 1.0)
+
+    def test_low_volume_btts_market_is_rejected(self) -> None:
+        records = normalize_matchbook_events(
+            [_event([_btts_market(volume=10.0)])], observed_at=1000.0
+        )
+
+        self.assertEqual(records, {})
 
 
 class SharpMergeTests(unittest.TestCase):

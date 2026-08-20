@@ -28,6 +28,21 @@ __all__ = ("get_unified_live_data", "get_settlement_feed", "check_live_feed_heal
 _OPERATOR_DIAG = "Donanim Erisilemiyor: Canli Veri Gateway Hatasi"
 _DRY_RUN_MODE = False
 _MATCH_RATIO_THRESHOLD = 0.70
+# Iki taraf da ayni baslama saatini bildiriyorsa isim benzerligi tek basina karar
+# vermez: kickoff dogrulamasi cok daha guclu bir kimliktir, bu yuzden esik duser.
+# ("Avai FC - Sport Club do Recife" <-> "Avai SC - Recife" gibi eslesmeler icin.)
+_KICKOFF_VERIFIED_RATIO_THRESHOLD = 0.50
+# Iki kaynagin bildirdigi baslama saati bu kadar ayrilabilir; fazlasi baska mactir.
+_KICKOFF_TOLERANCE_SECONDS = 15.0 * 60.0
+# Kulup adlarindaki jenerik ekler: kaynaklar bunlari tutarsiz yazar.
+_CLUB_AFFIX_TOKENS = frozenset(
+    {
+        "fc", "cf", "afc", "sc", "ec", "ac", "as", "rc", "cd", "sd", "ud", "us",
+        "ss", "ssc", "bsc", "sv", "sk", "fk", "bk", "ik", "if", "nk", "hnk",
+        "gnk", "kv", "kaa", "rcd", "sco", "osc", "fr", "ca", "cs", "club",
+        "calcio", "spor", "kulubu",
+    }
+)
 # Bildirimlerin uretilecegi evre: sadece "prematch" (mac oncesi) eslesmeler gecer.
 # Iki tarafin da (Nesine + referans) bu evrede olmasi sart; canli ve karisik eslesmeler elenir.
 _REQUIRED_FEED_PHASE = "prematch"
@@ -190,7 +205,9 @@ def _canonicalize_team_name(team_name: str) -> str:
         return _TEAM_NAME_CANONICAL[normalized]
 
     tokens = [_TEAM_NAME_CANONICAL.get(token, token) for token in normalized.split()]
-    canonical = " ".join(tokens)
+    stripped = [token for token in tokens if token not in _CLUB_AFFIX_TOKENS]
+    # Ad tamamen jenerik eklerden olusuyorsa (orn. "AC") ekler ayirt edicidir.
+    canonical = " ".join(stripped or tokens)
     return _TEAM_NAME_CANONICAL.get(canonical, canonical)
 
 
@@ -207,7 +224,50 @@ def _sequence_ratio(left: str, right: str) -> float:
     return SequenceMatcher(None, left, right).ratio()
 
 
-def _match_names_fuzzy(soft_name: str, sharp_name: str) -> float:
+def _token_containment(left: str, right: str) -> float:
+    """Kisa adin uzun adin icinde gecme orani.
+
+    Kaynaklar ayni takimi farkli uzunlukta yazar ("Recife" <-> "Sport Club do
+    Recife"). Karakter dizisi benzerligi bu durumda dusuk kalir, oysa kisa adin
+    tum sozcukleri uzun adin icindeyse kimlik nettir.
+    """
+    left_tokens = {token for token in left.split() if len(token) > 2}
+    right_tokens = {token for token in right.split() if len(token) > 2}
+    if not left_tokens or not right_tokens:
+        return 0.0
+    shorter, longer = sorted((left_tokens, right_tokens), key=len)
+    return len(shorter & longer) / len(shorter)
+
+
+def _parse_kickoff_epoch(value: object) -> float | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        kickoff = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if kickoff.tzinfo is None:
+        kickoff = kickoff.replace(tzinfo=timezone.utc)
+    return kickoff.timestamp()
+
+
+def _kickoff_relation(soft_entry: object, sharp_entry: object) -> str:
+    """Iki kaydin baslama saati iliskisi: 'ayni', 'farkli' veya 'bilinmiyor'."""
+    if not isinstance(soft_entry, dict) or not isinstance(sharp_entry, dict):
+        return "bilinmiyor"
+    soft_kickoff = _parse_kickoff_epoch(soft_entry.get("commence_time"))
+    sharp_kickoff = _parse_kickoff_epoch(sharp_entry.get("commence_time"))
+    if soft_kickoff is None or sharp_kickoff is None:
+        return "bilinmiyor"
+    if abs(soft_kickoff - sharp_kickoff) <= _KICKOFF_TOLERANCE_SECONDS:
+        return "ayni"
+    return "farkli"
+
+
+def _match_names_fuzzy(
+    soft_name: str, sharp_name: str, *, allow_containment: bool = False
+) -> float:
     soft_full = _canonicalize_team_name(soft_name)
     sharp_full = _canonicalize_team_name(sharp_name)
     full_ratio = _sequence_ratio(soft_full, sharp_full)
@@ -229,6 +289,18 @@ def _match_names_fuzzy(soft_name: str, sharp_name: str) -> float:
             + _sequence_ratio(soft_away_norm, sharp_home_norm)
         ) / 2
         team_ratio = max(direct_ratio, swapped_ratio)
+        if allow_containment:
+            # Kismi ad eslesmesi ancak baslama saati dogrulanmissa guvenlidir:
+            # tek basina "Arsenal" ile "Arsenal Tula"yi ayni sayabilirdi.
+            direct_containment = (
+                _token_containment(soft_home_norm, sharp_home_norm)
+                + _token_containment(soft_away_norm, sharp_away_norm)
+            ) / 2
+            swapped_containment = (
+                _token_containment(soft_home_norm, sharp_away_norm)
+                + _token_containment(soft_away_norm, sharp_home_norm)
+            ) / 2
+            team_ratio = max(team_ratio, direct_containment, swapped_containment)
         return max(full_ratio, team_ratio)
 
     return full_ratio
@@ -257,6 +329,7 @@ def _find_fuzzy_sharp_entry(
     market: str,
     sharp_entries: list[dict[str, str | float]],
     used_sharp_ids: set[int],
+    soft_entry: dict[str, str | float] | None = None,
 ) -> dict[str, str | float] | None:
     best_entry: dict[str, str | float] | None = None
     best_ratio = 0.0
@@ -270,8 +343,23 @@ def _find_fuzzy_sharp_entry(
         if not isinstance(sharp_match_name, str) or not sharp_match_name.strip():
             continue
 
-        ratio = _match_names_fuzzy(soft_match_name, sharp_match_name)
-        if ratio >= _MATCH_RATIO_THRESHOLD and ratio > best_ratio:
+        kickoff_relation = _kickoff_relation(soft_entry, sharp_entry)
+        if kickoff_relation == "farkli":
+            # Isimler benzese de baska bir mac: yanlis eslesme fiyat farkini
+            # tamamen uydurma yapar, bu yuzden aday listeden dusuruluyor.
+            continue
+        threshold = (
+            _KICKOFF_VERIFIED_RATIO_THRESHOLD
+            if kickoff_relation == "ayni"
+            else _MATCH_RATIO_THRESHOLD
+        )
+
+        ratio = _match_names_fuzzy(
+            soft_match_name,
+            sharp_match_name,
+            allow_containment=kickoff_relation == "ayni",
+        )
+        if ratio >= threshold and ratio > best_ratio:
             best_ratio = ratio
             best_entry = sharp_entry
 
@@ -404,6 +492,7 @@ def _merge_live_feeds(
             market_key,
             sharp_by_market.get(market_key, []),
             used_sharp_ids,
+            soft_entry,
         )
         if sharp_entry is None:
             continue
