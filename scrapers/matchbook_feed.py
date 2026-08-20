@@ -52,7 +52,9 @@ _PRICE_DEPTH = 1
 _MIN_MARKET_VOLUME = 250.0
 # Back/lay makasi bu kadar genisse borsanin fiyat gorusu net degildir.
 _MAX_SPREAD_RATIO = 1.12
-_TOTALS_LINE = 2.5
+# Nesine bulteninde satilan toplam gol cizgileri (MTID 11/12/13). Borsa daha cok
+# cizgi acar; karsiligi olmayan cizgiyi kaydetmek bosuna kayit uretir.
+_TOTALS_LINES = (1.5, 2.5, 3.5)
 _SPORT_KEY = "matchbook_exchange"
 # Back/lay ortasi zaten marjsizdir: aile toplami cogu zaman 1.0'in altina duser
 # ve paylasilan Shin devig'i (band: 1.0 < toplam <= 1.30) o aileyi atlar. Bu
@@ -198,12 +200,20 @@ def _market_label(
         return None
 
     if market_type == "total":
-        if _to_float(market.get("handicap")) != _TOTALS_LINE:
+        line = _to_float(market.get("handicap"))
+        if line not in _TOTALS_LINES:
             return None
         if folded.startswith("over"):
-            return totals_market_key("UST", _TOTALS_LINE)
+            return totals_market_key("UST", line)
         if folded.startswith("under"):
-            return totals_market_key("ALT", _TOTALS_LINE)
+            return totals_market_key("ALT", line)
+        return None
+
+    if market_type == "both_to_score":
+        if folded == "yes":
+            return "KG VAR"
+        if folded == "no":
+            return "KG YOK"
     return None
 
 

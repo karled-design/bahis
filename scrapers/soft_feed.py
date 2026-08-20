@@ -7,6 +7,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlparse
 
@@ -427,12 +428,33 @@ _PREMATCH_FIRST_HALF_MTID = 7
 _FIRST_HALF_LABEL_BY_OUTCOME_NO = {1: "IY1", 2: "IYX", 3: "IY2"}
 
 
+def _nesine_kickoff_iso(event: dict[str, Any]) -> str:
+    """Nesine olayinin baslama zamanini ISO-8601 UTC metnine cevirir.
+
+    Bulten `ESD` alaninda epoch milisaniye tasiyor. Bu deger, keskin kaynakla
+    isim benzerligi sinirda kalan eslesmeleri baslama saatiyle dogrulamak icin
+    kullanilir (bkz. live_feed_gateway).
+    """
+    raw = event.get("ESD")
+    if isinstance(raw, bool) or not isinstance(raw, (int, float)):
+        return ""
+    epoch_seconds = float(raw) / 1000.0
+    if epoch_seconds <= 0.0:
+        return ""
+    try:
+        kickoff = datetime.fromtimestamp(epoch_seconds, tz=timezone.utc)
+    except (OverflowError, OSError, ValueError):
+        return ""
+    return kickoff.isoformat().replace("+00:00", "Z")
+
+
 def _ingest_prematch_totals(
     normalized: dict[str, dict[str, str | float]],
     market_item: dict[str, Any],
     *,
     event_id: object,
     match_name: str,
+    commence_time: str = "",
 ) -> None:
     outcomes = market_item.get("OCA")
     if not isinstance(outcomes, list) or len(outcomes) != 2:
@@ -461,6 +483,7 @@ def _ingest_prematch_totals(
             parsed_odds,
             soft_source="nesine",
             feed_phase="prematch",
+            commence_time=commence_time,
         )
 
 
@@ -472,6 +495,7 @@ def _ingest_prematch_fixed_market(
     match_name: str,
     label_by_outcome_no: dict[int, str],
     market_tag: str,
+    commence_time: str = "",
 ) -> None:
     """Sabit secenekli yan pazari (KG, IY sonucu) ortak kayda cevirir."""
     outcomes = market_item.get("OCA")
@@ -498,6 +522,7 @@ def _ingest_prematch_fixed_market(
             parsed_odds,
             soft_source="nesine",
             feed_phase="prematch",
+            commence_time=commence_time,
         )
 
 
@@ -510,6 +535,7 @@ def _ingest_record(
     *,
     soft_source: str = "",
     feed_phase: str = "",
+    commence_time: str = "",
 ) -> None:
     record: dict[str, str | float] = {
         "match_name": match_name.strip(),
@@ -521,6 +547,8 @@ def _ingest_record(
         record["soft_source"] = soft_source
     if feed_phase:
         record["feed_phase"] = feed_phase
+    if commence_time:
+        record["commence_time"] = commence_time
     target[mac_id] = record
 
 
@@ -619,6 +647,8 @@ def _extract_nesine_prematch_payload(payload: dict[str, Any]) -> dict[str, dict[
         if not isinstance(markets, list):
             continue
 
+        commence_time = _nesine_kickoff_iso(event)
+
         for market_item in markets:
             if not isinstance(market_item, dict):
                 continue
@@ -631,6 +661,7 @@ def _extract_nesine_prematch_payload(payload: dict[str, Any]) -> dict[str, dict[
                     market_item,
                     event_id=event_id,
                     match_name=match_name,
+                    commence_time=commence_time,
                 )
                 continue
             if (
@@ -644,6 +675,7 @@ def _extract_nesine_prematch_payload(payload: dict[str, Any]) -> dict[str, dict[
                     match_name=match_name,
                     label_by_outcome_no=_BTTS_LABEL_BY_OUTCOME_NO,
                     market_tag="kg",
+                    commence_time=commence_time,
                 )
                 continue
             if (
@@ -657,6 +689,7 @@ def _extract_nesine_prematch_payload(payload: dict[str, Any]) -> dict[str, dict[
                     match_name=match_name,
                     label_by_outcome_no=_FIRST_HALF_LABEL_BY_OUTCOME_NO,
                     market_tag="iy",
+                    commence_time=commence_time,
                 )
                 continue
             if market_item.get("MST") != 1 or market_item.get("MTID") != 1:
@@ -686,6 +719,7 @@ def _extract_nesine_prematch_payload(payload: dict[str, Any]) -> dict[str, dict[
                     parsed_odds,
                     soft_source="nesine",
                     feed_phase="prematch",
+                    commence_time=commence_time,
                 )
 
     return normalized
