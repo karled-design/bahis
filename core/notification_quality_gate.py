@@ -30,6 +30,7 @@ __all__ = (
 
 _LIVE_NOTIFY_WINDOW_SECONDS = 7200
 _DRY_RUN_EVENT_PREFIX = "dry-run-"
+_EXCHANGE_SPORT_KEYS = frozenset({"matchbook_exchange", "betfair_exchange"})
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,8 @@ def _is_enabled_scan_league(match: dict[str, Any]) -> bool:
     sport_key = str(match.get("sport_key", "")).strip()
     if not sport_key:
         return False
+    if sport_key in _EXCHANGE_SPORT_KEYS:
+        return True
     return sport_key in get_enabled_sharp_sport_keys()
 
 
