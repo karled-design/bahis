@@ -69,6 +69,10 @@ _CONFLICT_HEAL_ESCALATION_DIAG = (
 _CONFLICT_HEAL_ESCALATION_THRESHOLD = 5
 _CONFLICT_HEAL_COUNT = 0
 _CONFLICT_ESCALATION_NOTIFIED = False
+_OWNERSHIP_YIELD_THRESHOLD = 3
+_LISTENER_INSTANCE_ID = ""
+_LISTENER_CLAIMED_AT = 0.0
+_OWNERSHIP_YIELDED = False
 _MAX_CALLBACK_DATA_BYTES = 64
 _START_SCAN_CALLBACK = "start_scan"
 _ALERT_TTL_SECONDS = 900
@@ -193,6 +197,43 @@ def _conflict_backoff_seconds(attempt: int) -> float:
     )
 
 
+def _remote_owner_took_over() -> str:
+    """Token defterinde bizden yeni bir sahiplik kaydi varsa o motorun kimligi."""
+    from core.telegram_owner_lock import read_claim
+
+    claim = read_claim()
+    if claim is None or not _LISTENER_INSTANCE_ID:
+        return ""
+    if claim.instance_id == _LISTENER_INSTANCE_ID:
+        return ""
+    if claim.claimed_at <= _LISTENER_CLAIMED_AT:
+        return ""
+    return claim.instance_id
+
+
+def _yield_listener_to(owner_id: str) -> None:
+    """Daha yeni motor devraldi: burada dinlemeyi birak, operatore secenek sun."""
+    global _OWNERSHIP_YIELDED
+
+    if _OWNERSHIP_YIELDED:
+        return
+    _OWNERSHIP_YIELDED = True
+    _LISTENER_STOP.set()
+    print(
+        f"[SQE-V1] Telegram dinleyicisi devredildi | yeni motor={owner_id} | "
+        f"bu motor={_LISTENER_INSTANCE_ID} | bildirim gonderimi suruyor",
+        file=sys.stderr,
+    )
+    _send_operator_notice(
+        f"Uyari: '{owner_id}' motoru botu devraldi. Bu makinedeki motor "
+        f"('{_LISTENER_INSTANCE_ID}') artik butonlari ve komutlari islemiyor; "
+        "bildirim gondermeye devam ediyor.\n\n"
+        "Secenekler: (1) yeni motoru kullan, bu makinede bir sey yapma; "
+        "(2) kontrolu geri almak icin bu makinede motoru yeniden baslat; "
+        "(3) ikisi de calissin istiyorsan birine ayri bir TELEGRAM_TOKEN ver."
+    )
+
+
 def _self_heal_telegram_conflict() -> None:
     """409 tedavisi: ilk denemede oturumu sifirla, sonrasinda sadece geri cekil.
 
@@ -205,6 +246,12 @@ def _self_heal_telegram_conflict() -> None:
 
     _CONFLICT_HEAL_COUNT += 1
     time.sleep(_conflict_backoff_seconds(_CONFLICT_HEAL_COUNT))
+
+    if _CONFLICT_HEAL_COUNT >= _OWNERSHIP_YIELD_THRESHOLD:
+        owner_id = _remote_owner_took_over()
+        if owner_id:
+            _yield_listener_to(owner_id)
+            return
 
     if _CONFLICT_HEAL_COUNT == 1:
         reset_telegram_api_session(drop_pending_updates=True)
@@ -1267,11 +1314,13 @@ def _listener_loop(poll_interval_seconds: float) -> None:
 
 
 def start_telegram_listener(poll_interval_seconds: float = 1.0) -> None:
-    global _LISTENER_THREAD
+    global _LISTENER_THREAD, _LISTENER_INSTANCE_ID, _LISTENER_CLAIMED_AT, _OWNERSHIP_YIELDED
 
     if _LISTENER_THREAD is not None and _LISTENER_THREAD.is_alive():
         return
 
+    _claim_listener_ownership()
+    _OWNERSHIP_YIELDED = False
     _prepare_polling_session()
     _LISTENER_STOP.clear()
     _LISTENER_THREAD = threading.Thread(
@@ -1281,6 +1330,37 @@ def start_telegram_listener(poll_interval_seconds: float = 1.0) -> None:
         daemon=True,
     )
     _LISTENER_THREAD.start()
+
+
+def _claim_listener_ownership() -> None:
+    """Kalkan motor botu devralir; eski sahibi cakismada bunu gorup cekilir."""
+    global _LISTENER_INSTANCE_ID, _LISTENER_CLAIMED_AT
+
+    from core.telegram_owner_lock import build_instance_id, publish_claim
+
+    instance_id = build_instance_id()
+    previous = None
+    try:
+        from core.telegram_owner_lock import read_claim
+
+        previous = read_claim()
+    except (OSError, ValueError):
+        previous = None
+
+    claim = publish_claim(instance_id)
+    if claim is None:
+        _emit_operator_diag("sahiplik kaydi yazilamadi; cakisma tespiti sinirli")
+        _LISTENER_INSTANCE_ID = instance_id
+        _LISTENER_CLAIMED_AT = time.time()
+        return
+
+    _LISTENER_INSTANCE_ID = claim.instance_id
+    _LISTENER_CLAIMED_AT = claim.claimed_at
+    if previous is not None and previous.instance_id != instance_id:
+        print(
+            f"[SQE-V1] Telegram botu devralindi | onceki motor={previous.instance_id} "
+            f"| bu motor={instance_id}"
+        )
 
 
 def stop_telegram_listener() -> None:
