@@ -78,6 +78,7 @@ _CMD_START = "[🚀 Taramayı Başlat]"
 _CMD_STOP = "[🛑 Taramayı Durdur]"
 _START_ALIASES = {_CMD_START, "🚀 Taramayı Başlat"}
 _STOP_ALIASES = {_CMD_STOP, "🛑 Taramayı Durdur"}
+_STATUS_ALIASES = {"/durum", "/status", "durum"}
 
 _LISTENER_THREAD: threading.Thread | None = None
 _LISTENER_STOP = threading.Event()
@@ -1063,6 +1064,21 @@ def _process_callback_query(callback: dict[str, Any]) -> bool:
     return False
 
 
+def _build_status_text() -> str:
+    """Operatorun Telegram'dan anlik durum sorabilmesi icin nabiz metnini kurar."""
+    from core.olcum_nabzi import build_pulse_message
+
+    scan_enabled = bool(SISTEM_DURUMU.get("scan_enabled", False))
+    try:
+        return build_pulse_message(scan_enabled=scan_enabled)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        _emit_kupon_diag(f"durum mesaji kurulamadi | {exc}")
+        return (
+            "Durum kartı şu an oluşturulamadı; motor çalışıyor, "
+            f"tarama={'açık' if scan_enabled else 'kapalı'}."
+        )
+
+
 def _process_message(message: dict[str, Any]) -> bool:
     chat = message.get("chat")
     if not isinstance(chat, dict) or not _is_operator_chat(chat.get("id")):
@@ -1078,6 +1094,9 @@ def _process_message(message: dict[str, Any]) -> bool:
         return True
     if normalized in _STOP_ALIASES:
         _set_scan_enabled(False)
+        return True
+    if normalized.split("@")[0].lower() in _STATUS_ALIASES:
+        _send_operator_notice(_build_status_text())
         return True
     return False
 
