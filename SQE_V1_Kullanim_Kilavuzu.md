@@ -106,6 +106,35 @@ teknik ayrıntıları açar. Seçiminiz tarayıcıda saklanır.
 Başlıkların yanındaki küçük **?** düğmesine dokununca terimin tek cümlelik açıklaması
 ekranda belirir (Getiri, Kanıt Karnesi, Seçici mod, Aktif öneriler).
 
+### Fırsatlar sekmesi — öneriyi okumak
+
+Her öneri bir kart. Kartta önce ne olduğu, sonra ne yapmanız gerektiği yazar:
+
+> Nesine bu bahse **2.20** veriyor, keskin piyasanın adil fiyatı **2.00**.
+> Yani Nesine yaklaşık **%10 fazla ödüyor**; değer farkı bu.
+>
+> **Ne yapmalı:** Nesine'de bu oranı (ya da daha iyisini) bul, tutarı oyna ve
+> aşağıdan **Oynadım**'a bas.
+
+İki tür kart vardır:
+
+| Rozet | Anlamı | Ne yapmalı |
+|-------|--------|------------|
+| **ONERI** | Oyna adayı — tutar da yazılmıştır | Oranı bulup oynayın, sonra **Oynadım** |
+| **IZLE** | Fark henüz oynamaya yetmiyor | Şimdilik bir şey yapmayın; sistem izliyor |
+
+Üstteki **Tumu / Oyna adayi / Sadece izle** düğmeleri listeyi süzer; yanlarındaki
+sayı o türden kaç kayıt olduğunu gösterir. İlk kez gördüğünüz kartlarda **YENI**
+etiketi çıkar. **Pas Gec** kartı listeden düşürür, kasaya dokunmaz.
+
+**Ölçüm modu açıkken** kartların üstünde sarı bir not durur: buradaki hiçbir işlem
+gerçek kupon açmaz ve kasanızı değiştirmez — **Oynadım** yalnızca "ben bunu oynadım"
+notu düşer.
+
+Liste boşsa panel nedenini yazar (ör. "Son tarama 14:32 · 186 maçta Nesine ile keskin
+piyasa karşılaştırıldı, hiçbirinde Nesine yeterince yüksek kalmadı"). **Boş liste
+normaldir** — fiyat farkı çıkmadıkça sistem sessiz kalır.
+
 ### Özet sekmesi
 
 **Üstte 3 kart (her zaman görünür):**
