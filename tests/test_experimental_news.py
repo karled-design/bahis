@@ -93,6 +93,50 @@ class ExperimentalNewsTests(unittest.TestCase):
         result = apply_experimental_tier_gate("ACTION", enriched[0], market="MS1")
         self.assertTrue(result.would_filter)
 
+    def _hits(self, match_name: str, titles: list[str]) -> list[dict[str, object]]:
+        fake_items = [
+            {"source_id": "x", "source_label": "X", "title": title, "published_at": ""}
+            for title in titles
+        ]
+        with mock.patch("scrapers.news_feed._refresh_cache_if_needed", return_value=fake_items):
+            enriched = attach_experimental_news_to_matches([{"match_name": match_name}])
+        news = enriched[0].get("experimental_news")
+        if not isinstance(news, dict):
+            return []
+        hits = news.get("rss_hits")
+        return hits if isinstance(hits, list) else []
+
+    def test_turkce_karakterli_takim_adi_eslesir(self) -> None:
+        hits = self._hits(
+            "Fenerbahce - Galatasaray",
+            ["Fenerbahçe'de sakatlik sonrasi ilk 11 degisti"],
+        )
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["teams"], ["fenerbahce"])
+
+    def test_cok_kelimeli_takim_adi_eslesir(self) -> None:
+        hits = self._hits(
+            "Manchester United - Arsenal",
+            ["Manchester United handed injury boost before kickoff"],
+        )
+        self.assertEqual(len(hits), 1)
+        self.assertEqual(hits[0]["teams"], ["manchester_united"])
+
+    def test_kulup_eki_farki_eslesmeyi_bozmaz(self) -> None:
+        hits = self._hits("Roma - Lazio", ["AS Roma confirm starting XI"])
+        self.assertEqual(len(hits), 1)
+
+    def test_belirsiz_tek_kelime_yanlis_eslesme_uretmez(self) -> None:
+        hits = self._hits(
+            "Manchester United - Arsenal",
+            ["Leeds United sign a new goalkeeper"],
+        )
+        self.assertEqual(hits, [])
+
+    def test_alakasiz_baslik_eslesmez(self) -> None:
+        hits = self._hits("Fenerbahce - Galatasaray", ["Bugun hava durumu yagisli"])
+        self.assertEqual(hits, [])
+
 
 if __name__ == "__main__":
     unittest.main()

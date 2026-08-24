@@ -142,19 +142,97 @@ def _refresh_cache_if_needed() -> list[dict[str, Any]]:
     return items
 
 
+# Kulup adlarindaki tasiyici ekler: "AS Roma" basligi ile "Roma" mac adini
+# ayni takim saymak icin iki tarafta da dusurulur.
+_CLUB_AFFIXES = frozenset(
+    {
+        "ac",
+        "afc",
+        "as",
+        "bk",
+        "cd",
+        "cf",
+        "fc",
+        "fk",
+        "if",
+        "kulubu",
+        "rc",
+        "sc",
+        "sk",
+        "sv",
+        "ss",
+        "ssc",
+        "us",
+        "vfb",
+        "vfl",
+    }
+)
+
+# Tek basina birden fazla kulube isaret eden kelimeler: yanlis eslesme uretir.
+_AMBIGUOUS_TOKENS = frozenset(
+    {
+        "athletic",
+        "atletico",
+        "city",
+        "county",
+        "real",
+        "rovers",
+        "spor",
+        "sporting",
+        "town",
+        "united",
+        "utd",
+        "wanderers",
+        "albion",
+    }
+)
+
+_MAX_NAME_WORDS = 3
+
+
+def _normalized_tokens(text: str) -> list[str]:
+    """Once ASCII'ye cevirip sonra boler: 'Fenerbahce' kelimesi ortadan kirilmaz."""
+    normalized = normalize_team_key(text)
+    return [token for token in normalized.split("_") if token]
+
+
+def _team_name_keys(team_name: str) -> set[str]:
+    """Bir takim adinin eslesebilecek anahtarlari (tam ad + eksiz govde)."""
+    tokens = _normalized_tokens(team_name)
+    if not tokens:
+        return set()
+    keys = {"_".join(tokens)}
+    core = [token for token in tokens if token not in _CLUB_AFFIXES]
+    if core:
+        keys.add("_".join(core))
+    return keys
+
+
 def _item_team_keys(title: str) -> set[str]:
-    keys: set[str] = set()
+    """Baslikta gecebilecek takim adi adaylari (1-3 kelimelik pencereler).
+
+    Tek kelimelik adaylar yalniz ayirt edici olduklarinda uretilir; 'United'
+    gibi kelimeler onlarca kulube uyar ve yanlis haber eslesmesi dogurur.
+    """
     home, away = split_match_teams(title)
     if home and away:
-        keys.add(normalize_team_key(home))
-        keys.add(normalize_team_key(away))
-        return keys
+        return _team_name_keys(home) | _team_name_keys(away)
 
-    lowered = title.casefold()
-    for token in re.split(r"[^a-z0-9]+", lowered):
-        token = token.strip()
-        if len(token) >= 4:
-            keys.add(normalize_team_key(token))
+    tokens = _normalized_tokens(title)
+    keys: set[str] = set()
+    for start in range(len(tokens)):
+        for size in range(1, _MAX_NAME_WORDS + 1):
+            window = tokens[start : start + size]
+            if len(window) < size:
+                break
+            if size == 1:
+                token = window[0]
+                if len(token) < 4 or token in _AMBIGUOUS_TOKENS or token in _CLUB_AFFIXES:
+                    continue
+            keys.add("_".join(window))
+            core = [token for token in window if token not in _CLUB_AFFIXES]
+            if core and len(core) != len(window):
+                keys.add("_".join(core))
     return keys
 
 
@@ -174,10 +252,11 @@ def _is_recent(published_at: str) -> bool:
 def _match_rss_hits(match: dict[str, Any], items: list[dict[str, Any]]) -> list[dict[str, Any]]:
     match_name = str(match.get("match_name", "")).strip()
     home, away = split_match_teams(match_name)
-    home_key = normalize_team_key(home)
-    away_key = normalize_team_key(away)
-    if not home_key or not away_key:
+    home_keys = _team_name_keys(home)
+    away_keys = _team_name_keys(away)
+    if not home_keys or not away_keys:
         return []
+    wanted = home_keys | away_keys
 
     hits: list[dict[str, Any]] = []
     for item in items:
@@ -185,14 +264,14 @@ def _match_rss_hits(match: dict[str, Any], items: list[dict[str, Any]]) -> list[
             continue
         title = str(item.get("title", "")).strip()
         team_keys = _item_team_keys(title)
-        if home_key not in team_keys and away_key not in team_keys:
+        if wanted.isdisjoint(team_keys):
             continue
         hits.append(
             {
                 "title": title,
                 "source": str(item.get("source_label", "")),
                 "published_at": str(item.get("published_at", "")),
-                "teams": sorted(team_keys),
+                "teams": sorted(wanted & team_keys),
             }
         )
     return hits[:5]
