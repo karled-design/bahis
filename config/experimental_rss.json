@@ -1,19 +1,24 @@
 {
   "sources": [
     {
-      "id": "tff",
-      "label": "TFF Haberler",
-      "url": "https://www.tff.org/Resources/RSS/Haberler.xml"
+      "id": "trtspor_futbol",
+      "label": "TRT Spor Futbol",
+      "url": "https://www.trtspor.com.tr/rss/futbol.rss"
     },
     {
-      "id": "galatasaray",
-      "label": "Galatasaray",
-      "url": "https://www.galatasaray.org/rss/news"
+      "id": "fotomac_futbol",
+      "label": "Fotomac Futbol",
+      "url": "https://www.fotomac.com.tr/rss/futbol.xml"
     },
     {
-      "id": "fenerbahce",
-      "label": "Fenerbahce",
-      "url": "https://www.fenerbahce.org/rss/news"
+      "id": "hurriyet_spor",
+      "label": "Hurriyet Spor",
+      "url": "https://www.hurriyet.com.tr/rss/spor"
+    },
+    {
+      "id": "aa_spor",
+      "label": "Anadolu Ajansi Spor",
+      "url": "https://www.aa.com.tr/tr/rss/default?cat=spor"
     },
     {
       "id": "bbc_football",
