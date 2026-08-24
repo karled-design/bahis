@@ -86,6 +86,26 @@ Sistem arka planda diğer maçları tarar; **tüm tarama listesini** panelde gö
 > **Geliştirici / bakım:** Teknik manifest → [`docs/panel-ui-manifest.md`](docs/panel-ui-manifest.md)  
 > Panel UI güncellenince bu bölüm ve manifest birlikte kontrol edilir.
 
+### Sekmeler ve görünüm modu
+
+Panelin üstünde (telefonda altında) kalıcı bir menü var:
+
+| Sekme | Ne gösterir |
+|-------|-------------|
+| **Firsatlar** | Sistemin bulduğu öneriler — ne yapmanız gerektiği burada yazar |
+| **Kuponlarim** | Oynadığınız kuponlar ve sonuçları |
+| **Karne** | Bütçeniz, kâr oranınız ve sistemin kanıtı (Kanıt Karnesi) |
+| **Strateji** | Yalnızca **Uzman** görünümünde — seçici mod (HERO) ve strateji kartları |
+| **Ayarlar** | Risk seviyesi, bildirimler, ligler |
+| **Yardim** | Rehber ve teknik teşhis |
+
+Sağ üstteki **Basit / Uzman** anahtarı görünümü belirler. **Basit** (varsayılan) yalnızca
+kullanmanız gereken bilgileri gösterir; **Uzman** strateji kartlarını ve API kredisi gibi
+teknik ayrıntıları açar. Seçiminiz tarayıcıda saklanır.
+
+Başlıkların yanındaki küçük **?** düğmesine dokununca terimin tek cümlelik açıklaması
+ekranda belirir (Getiri, Kanıt Karnesi, Seçici mod, Aktif öneriler).
+
 ### Özet sekmesi
 
 **Üstte 3 kart (her zaman görünür):**

@@ -3311,6 +3311,74 @@
     .strategy-card-note.strategy-card-warn {
       color: var(--warning);
     }
+
+    /* Gorunum modu: Basit / Uzman */
+    .view-mode-switch {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-panel);
+    }
+
+    .view-mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      min-height: 32px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .view-mode-btn.active {
+      background: rgba(210, 153, 34, 0.13);
+      color: var(--warning);
+      box-shadow: inset 0 0 0 1px rgba(210, 153, 34, 0.35);
+    }
+
+    .view-mode-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    body:not(.mode-expert) [data-expert-only] {
+      display: none !important;
+    }
+
+    /* Terim ipucu noktasi */
+    .hint-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .hint-dot:hover,
+    .hint-dot:focus-visible {
+      color: var(--warning);
+      border-color: rgba(210, 153, 34, 0.55);
+    }
+
+    .hint-dot:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
@@ -3319,6 +3387,10 @@
       <div class="header-row">
         <h1 class="title">Nesine Değer Avcısı</h1>
         <div class="header-actions">
+          <div class="view-mode-switch" id="viewModeSwitch" role="group" aria-label="Gorunum modu">
+            <button type="button" class="view-mode-btn active" data-view-mode="basit">Basit</button>
+            <button type="button" class="view-mode-btn" data-view-mode="uzman">Uzman</button>
+          </div>
           <span class="header-kasa" id="headerKasa" title="Kayitli butceniz">—</span>
           <div class="shutter-wrap" id="scanShutterWrap" role="switch" aria-checked="false" aria-label="Tarama salteri" tabindex="0">
             <span class="shutter-label">Salter</span>
@@ -3361,15 +3433,24 @@
         <div class="now-item"><span id="statusStripScan">Son tarama: —</span></div>
         <div class="now-item">Bekleyen: <span id="metricOpenMatches">—</span></div>
         <div class="now-item"><span id="statusStripToday">Bugun bildirim: —</span></div>
-        <div class="now-item"><span id="statusStripCredits">API kredisi: —</span></div>
+        <div class="now-item" data-expert-only><span id="statusStripCredits">API kredisi: —</span></div>
       </div>
     </section>
+
+    <nav class="tab-nav tab-nav-top" id="sectionNavTop" aria-label="Bolum menusu">
+      <button type="button" class="tab-btn" data-section="bildirim">Firsatlar</button>
+      <button type="button" class="tab-btn" data-section="kupon">Kuponlarim</button>
+      <button type="button" class="tab-btn" data-section="kasa">Karne</button>
+      <button type="button" class="tab-btn" data-section="strateji" data-expert-only>Strateji</button>
+      <button type="button" class="tab-btn" data-section="ayarlar">Ayarlar</button>
+      <button type="button" class="tab-btn" data-section="yardim">Yardim</button>
+    </nav>
 
     <main class="panel-sections" id="panelSections">
 
       <details class="panel-section" id="sectionKasa" data-section="kasa">
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Kasa ve performans<span class="ui-accordion-sub">butce, getiri, kanit karnesi</span></span>
+          <span class="accordion-title-wrap">Karne ve kasa<span class="ui-accordion-sub">butceniz, kar oraniniz ve sistemin kaniti</span></span>
           <span class="accordion-summary-value" id="overviewSecondarySummaryValue">—</span>
         </summary>
         <div class="panel-section-body">
@@ -3419,7 +3500,7 @@
           <section class="clv-scorecard" id="clvScorecard" aria-label="Kanit Karnesi">
             <div class="clv-scorecard-head">
               <span class="clv-kanit-tag">KANIT</span>
-              <span class="clv-scorecard-title">Kanit Karnesi</span>
+              <span class="clv-scorecard-title">Kanit Karnesi<button type="button" class="hint-dot" data-hint="Kanit Karnesi: aldigimiz oran, mac baslarkenki son orandan iyi miydi? Sonuctan bagimsiz olarak 'fiyat dogru muydu' sorusunu olcer." aria-label="Kanit Karnesi nedir?">?</button></span>
               <span class="clv-scorecard-sub">Bildirimden sonra oran lehimize kaydi mi?</span>
             </div>
             <div class="proof-badge test" id="proofBadge" hidden>
@@ -3461,7 +3542,7 @@
           </section>
           <section class="metrics metrics-secondary">
             <article class="metric-card">
-              <div class="metric-label">Getiri (her 100 TL icin)</div>
+              <div class="metric-label">Getiri (her 100 TL icin)<button type="button" class="hint-dot" data-hint="Getiri (ROI): yatirdiginiz her 100 TL'nin ne kadar kar/zarar getirdigi. Artiysa kardasiniz." aria-label="Getiri nedir?">?</button></div>
               <div class="metric-value" id="metricRoi">—</div>
             </article>
           </section>
@@ -3508,13 +3589,13 @@
 
       <details class="panel-section" id="sectionBildirim" data-section="bildirim" open>
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Gelen bildirimler<span class="ui-accordion-sub">degerli bahis onerileri — panelden takip</span></span>
+          <span class="accordion-title-wrap">Firsatlar<span class="ui-accordion-sub">sistemin buldugu oneriler — ne yapmali burada yazar</span></span>
           <span class="accordion-summary-value" id="sectionBildirimSummary">—</span>
         </summary>
         <div class="panel-section-body">
           <section class="table-wrap">
             <div class="table-head">
-              <span class="table-title">Aktif oneriler</span>
+              <span class="table-title">Aktif oneriler<button type="button" class="hint-dot" data-hint="Oneri: Nesine'nin oraninin keskin piyasadan daha yuksek kaldigi maclar. Olcum modunda gercek kupon acilmaz, kasa degismez." aria-label="Oneri nedir?">?</button></span>
               <span class="sync-note" id="recommendationCount">0 oneri</span>
             </div>
             <p class="my-matches-empty" id="recommendationEmpty">
@@ -3527,7 +3608,7 @@
 
       <details class="panel-section" id="sectionKupon" data-section="kupon">
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Kuponlar ve maclar<span class="ui-accordion-sub">oynadiginiz kuponlar ve sonuclari</span></span>
+          <span class="accordion-title-wrap">Kuponlarim<span class="ui-accordion-sub">oynadiginiz kuponlar ve sonuclari</span></span>
           <span class="accordion-summary-value" id="sectionKuponSummary">—</span>
         </summary>
         <div class="panel-section-body">
@@ -3571,15 +3652,15 @@
         </div>
       </details>
 
-      <details class="panel-section" id="sectionStrateji" data-section="strateji">
+      <details class="panel-section" id="sectionStrateji" data-section="strateji" data-expert-only>
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Stratejiler<span class="ui-accordion-sub">kazanc mantiklari — HERO ve yeni kartlar</span></span>
+          <span class="accordion-title-wrap">Stratejiler<span class="ui-accordion-sub">uzman ayarlari — secici mod (HERO) ve yeni kartlar</span></span>
           <span class="accordion-summary-value" id="strategySummaryValue">—</span>
         </summary>
         <div class="panel-section-body">
                 <div class="notify-frequency-panel hero-mode-panel settings-card" id="heroModePanel">
                   <div class="hero-mode-head">
-                    <div class="hero-mode-title">Iyi Adam Modu (HERO)</div>
+                    <div class="hero-mode-title">Secici mod (HERO)<button type="button" class="hint-dot" data-hint="Secici mod: daha az ama daha guven veren oneri. Kapaliyken sistem saf deger avcisi gibi calisir (daha cok, daha ham oneri)." aria-label="Secici mod nedir?">?</button></div>
                     <label class="hero-mode-switch">
                       <input type="checkbox" id="heroModeToggle" />
                       <span id="heroModeLabel">Kapali</span>
@@ -3960,9 +4041,10 @@
     </main>
 
     <nav class="tab-nav tab-nav-bottom" id="sectionNavBottom" aria-label="Bolum menusu">
-      <button type="button" class="tab-btn" data-section="kasa">Kasa</button>
-      <button type="button" class="tab-btn" data-section="kupon">Kuponlar</button>
-      <button type="button" class="tab-btn" data-section="strateji">Strateji</button>
+      <button type="button" class="tab-btn" data-section="bildirim">Firsatlar</button>
+      <button type="button" class="tab-btn" data-section="kupon">Kuponlarim</button>
+      <button type="button" class="tab-btn" data-section="kasa">Karne</button>
+      <button type="button" class="tab-btn" data-section="strateji" data-expert-only>Strateji</button>
       <button type="button" class="tab-btn" data-section="ayarlar">Ayarlar</button>
       <button type="button" class="tab-btn" data-section="yardim">Yardim</button>
     </nav>
@@ -4219,6 +4301,68 @@
           saved = "";
         }
         if (saved) openSection(saved, false);
+      }
+
+      var VIEW_MODE_STORAGE_KEY = "sqe_panel_view_mode_v1";
+      var EXPERT_SECTIONS = ["strateji"];
+
+      function applyViewMode(mode) {
+        var expert = mode === "uzman";
+        document.body.classList.toggle("mode-expert", expert);
+        document.querySelectorAll(".view-mode-btn[data-view-mode]").forEach(function (btn) {
+          var active = btn.getAttribute("data-view-mode") === (expert ? "uzman" : "basit");
+          btn.classList.toggle("active", active);
+          btn.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        if (!expert) {
+          EXPERT_SECTIONS.forEach(function (id) {
+            var section = document.querySelector(
+              'details.panel-section[data-section="' + id + '"]'
+            );
+            if (section && section.open) {
+              section.open = false;
+              openSection("bildirim", false);
+            }
+          });
+        }
+        try {
+          localStorage.setItem(VIEW_MODE_STORAGE_KEY, expert ? "uzman" : "basit");
+        } catch (err) {
+          /* ignore */
+        }
+      }
+
+      function initViewMode() {
+        var saved = "";
+        try {
+          saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY) || "";
+        } catch (err) {
+          saved = "";
+        }
+        applyViewMode(saved === "uzman" ? "uzman" : "basit");
+        document.querySelectorAll(".view-mode-btn[data-view-mode]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var mode = btn.getAttribute("data-view-mode");
+            applyViewMode(mode);
+            showToast(
+              mode === "uzman"
+                ? "Uzman gorunum: tum teknik detaylar acildi"
+                : "Basit gorunum: yalnizca gerekli bilgiler"
+            );
+          });
+        });
+      }
+
+      function initHintDots() {
+        document.addEventListener("click", function (event) {
+          var target = event.target;
+          if (!target || !target.closest) return;
+          var dot = target.closest(".hint-dot[data-hint]");
+          if (!dot) return;
+          event.preventDefault();
+          event.stopPropagation();
+          showToast(dot.getAttribute("data-hint") || "", 6000);
+        });
       }
 
       var ZONE_LABELS = {
@@ -6928,6 +7072,8 @@
       }
 
       initSections();
+      initViewMode();
+      initHintDots();
       bindExclusivePanelAccordions();
       fetchStatus();
       fetchFinanceMetrics();
