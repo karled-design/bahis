@@ -917,8 +917,110 @@
       .system-status-led {
         animation: none !important;
       }
-      .toast {
-        transition: none;
+      .toast,
+      .onboard-overlay,
+      .onboard-card {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+
+    /* Ilk kullanim rehberi */
+    .onboard-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(1, 4, 9, 0.78);
+    }
+    .onboard-overlay[hidden] { display: none; }
+    .onboard-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+    }
+    .onboard-step {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--warning);
+      text-transform: uppercase;
+    }
+    .onboard-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.35;
+      color: #e6edf3;
+    }
+    .onboard-text {
+      margin: 0 0 16px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #b9c2cc;
+    }
+    .onboard-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .onboard-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #30363d;
+    }
+    .onboard-dot.active { background: var(--warning); }
+    .onboard-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .onboard-btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .onboard-btn-next {
+      flex: 1;
+      background: #1f6f3f;
+      border-color: #2ea043;
+      color: #ffffff;
+    }
+    .onboard-btn-next:hover { background: #2ea043; }
+    .onboard-btn-ghost {
+      background: transparent;
+      color: #8b949e;
+    }
+    .onboard-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    @media (max-width: 560px) {
+      .onboard-card { padding: 16px; }
+      .onboard-title { font-size: 16px; }
+    }
+
+    /* Dokunma hedefi: telefonda kucuk butonlar 44px'e cikar */
+    @media (max-width: 900px) {
+      .rec-filter-btn,
+      .view-mode-btn {
+        min-height: 44px;
+        padding-left: 14px;
+        padding-right: 14px;
       }
     }
 
@@ -3954,6 +4056,10 @@
           <section class="settings-zone settings-zone-help" aria-label="Baslangic rehberi">
             <h2 class="settings-zone-title">Baslangic rehberi</h2>
 
+            <button type="button" class="onboard-btn" id="onboardReplay">
+              Ilk kullanim rehberini tekrar goster
+            </button>
+
             <details class="ui-accordion ui-accordion-help" id="helpWhatIsThis">
               <summary class="ui-accordion-summary">
                 <span class="accordion-title-wrap">Bu sistem ne yapar?<span class="ui-accordion-sub">deger bahsi — 2 dakikada</span></span>
@@ -4114,6 +4220,20 @@
       <button type="button" class="tab-btn" data-section="ayarlar">Ayarlar</button>
       <button type="button" class="tab-btn" data-section="yardim">Yardim</button>
     </nav>
+
+    <div class="onboard-overlay" id="onboardOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+      <div class="onboard-card">
+        <p class="onboard-step" id="onboardStep">Adim 1 / 4</p>
+        <h2 class="onboard-title" id="onboardTitle">—</h2>
+        <p class="onboard-text" id="onboardText">—</p>
+        <div class="onboard-dots" id="onboardDots" aria-hidden="true"></div>
+        <div class="onboard-actions">
+          <button type="button" class="onboard-btn onboard-btn-ghost" id="onboardSkip">Atla</button>
+          <button type="button" class="onboard-btn" id="onboardBack">Geri</button>
+          <button type="button" class="onboard-btn onboard-btn-next" id="onboardNext">Ileri</button>
+        </div>
+      </div>
+    </div>
 
     <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
@@ -4429,6 +4549,131 @@
           event.stopPropagation();
           showToast(dot.getAttribute("data-hint") || "", 6000);
         });
+      }
+
+      var ONBOARD_STORAGE_KEY = "sqe_panel_onboard_v1";
+      var ONBOARD_STEPS = [
+        {
+          title: "Bu panel ne yapar?",
+          text:
+            "Nesine'nin orani ile dunyanin en keskin bahis piyasalarinin fiyatini surekli karsilastirir. " +
+            "Nesine yuksek kaldiginda size haber verir. Maci tahmin etmiyoruz; yanlis fiyatlanmis orani ariyoruz."
+        },
+        {
+          title: "Firsatlar sekmesi",
+          text:
+            "Sistem bir sey bulunca kart olarak burada cikar. Kart once ne oldugunu yazar " +
+            "(\"Nesine 2.20 veriyor, adil fiyat 2.00\"), sonra ne yapmaniz gerektigini soyler. " +
+            "IZLE yazan kartlarda hicbir sey yapmayin."
+        },
+        {
+          title: "Su an olcum modundayiz",
+          text:
+            "Hicbir gercek kupon acilmaz, kasaniz degismez. Oynadim dugmesi yalnizca not duser. " +
+            "Amac once sistemin fiyatlarinin dogru oldugunu kanitlamak — bunu Karne sekmesindeki Kanit Karnesi gosterir."
+        },
+        {
+          title: "Basit ve Uzman gorunumu",
+          text:
+            "Sag ustteki anahtar Basit'te kalirsa yalnizca isinize yarayan bilgiyi gorursunuz. " +
+            "Uzman'a alirsaniz strateji ayarlari ve teknik sayaclar acilir. Terimlerin yanindaki ? isaretine dokunun."
+        }
+      ];
+      var onboardIndex = 0;
+
+      function renderOnboardStep() {
+        var stepEl = document.getElementById("onboardStep");
+        var titleEl = document.getElementById("onboardTitle");
+        var textEl = document.getElementById("onboardText");
+        var dotsEl = document.getElementById("onboardDots");
+        var backBtn = document.getElementById("onboardBack");
+        var nextBtn = document.getElementById("onboardNext");
+        var step = ONBOARD_STEPS[onboardIndex];
+        if (!step) return;
+        if (stepEl) {
+          stepEl.textContent =
+            "Adim " + String(onboardIndex + 1) + " / " + String(ONBOARD_STEPS.length);
+        }
+        if (titleEl) titleEl.textContent = step.title;
+        if (textEl) textEl.textContent = step.text;
+        if (dotsEl) {
+          dotsEl.innerHTML = ONBOARD_STEPS.map(function (_, idx) {
+            return '<span class="onboard-dot' + (idx === onboardIndex ? " active" : "") + '"></span>';
+          }).join("");
+        }
+        if (backBtn) backBtn.hidden = onboardIndex === 0;
+        if (nextBtn) {
+          nextBtn.textContent =
+            onboardIndex === ONBOARD_STEPS.length - 1 ? "Anladim, basla" : "Ileri";
+        }
+      }
+
+      function closeOnboarding(markSeen) {
+        var overlay = document.getElementById("onboardOverlay");
+        if (overlay) overlay.hidden = true;
+        if (markSeen) {
+          try {
+            localStorage.setItem(ONBOARD_STORAGE_KEY, "1");
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      }
+
+      function openOnboarding() {
+        var overlay = document.getElementById("onboardOverlay");
+        if (!overlay) return;
+        onboardIndex = 0;
+        renderOnboardStep();
+        overlay.hidden = false;
+        var nextBtn = document.getElementById("onboardNext");
+        if (nextBtn) nextBtn.focus();
+      }
+
+      function initOnboarding() {
+        var overlay = document.getElementById("onboardOverlay");
+        if (!overlay) return;
+        var backBtn = document.getElementById("onboardBack");
+        var nextBtn = document.getElementById("onboardNext");
+        var skipBtn = document.getElementById("onboardSkip");
+        var replayBtn = document.getElementById("onboardReplay");
+        if (backBtn) {
+          backBtn.addEventListener("click", function () {
+            if (onboardIndex > 0) onboardIndex -= 1;
+            renderOnboardStep();
+          });
+        }
+        if (nextBtn) {
+          nextBtn.addEventListener("click", function () {
+            if (onboardIndex < ONBOARD_STEPS.length - 1) {
+              onboardIndex += 1;
+              renderOnboardStep();
+              return;
+            }
+            closeOnboarding(true);
+            openSection("bildirim", false);
+          });
+        }
+        if (skipBtn) {
+          skipBtn.addEventListener("click", function () {
+            closeOnboarding(true);
+          });
+        }
+        if (replayBtn) {
+          replayBtn.addEventListener("click", function () {
+            openOnboarding();
+          });
+        }
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && !overlay.hidden) closeOnboarding(true);
+        });
+        var seen = "";
+        try {
+          seen = localStorage.getItem(ONBOARD_STORAGE_KEY) || "";
+        } catch (err) {
+          seen = "1";
+        }
+        if (!seen) openOnboarding();
       }
 
       var ZONE_LABELS = {
@@ -7281,6 +7526,7 @@
       initViewMode();
       initHintDots();
       initRecFilter();
+      initOnboarding();
       bindExclusivePanelAccordions();
       fetchStatus();
       fetchFinanceMetrics();
