@@ -1990,6 +1990,64 @@
       color: #8b949e;
     }
     .rec-btn-skip:hover { color: #e6edf3; border-color: #6f8199; }
+    /* Bildirim merkezi: olcum notu, filtreler, insan dili ozet */
+    .rec-mode-note {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(210, 153, 34, 0.35);
+      background: rgba(210, 153, 34, 0.10);
+      color: #d29922;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .rec-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .rec-filter-btn {
+      padding: 6px 12px;
+      min-height: 32px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 999px;
+      border: 1px solid #30363d;
+      background: transparent;
+      color: #8b949e;
+      cursor: pointer;
+    }
+    .rec-filter-btn.active {
+      color: #d29922;
+      border-color: rgba(210, 153, 34, 0.55);
+      background: rgba(210, 153, 34, 0.12);
+    }
+    .rec-filter-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    .rec-plain {
+      margin-top: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #e6edf3;
+    }
+    .rec-todo {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #8b949e;
+    }
+    .rec-new-tag {
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.45);
+    }
     .realized-line {
       margin-top: 6px;
       font-size: 11px;
@@ -3597,6 +3655,14 @@
             <div class="table-head">
               <span class="table-title">Aktif oneriler<button type="button" class="hint-dot" data-hint="Oneri: Nesine'nin oraninin keskin piyasadan daha yuksek kaldigi maclar. Olcum modunda gercek kupon acilmaz, kasa degismez." aria-label="Oneri nedir?">?</button></span>
               <span class="sync-note" id="recommendationCount">0 oneri</span>
+            </div>
+            <p class="rec-mode-note" id="recModeNote" hidden>
+              Olcum modu acik: buradaki hicbir islem gercek kupon acmaz, kasaniz degismez. Oynadim'a basarsaniz yalnizca "ben bunu oynadim" notu dusulur.
+            </p>
+            <div class="rec-filter" id="recFilter" role="group" aria-label="Oneri filtresi">
+              <button type="button" class="rec-filter-btn active" data-rec-filter="all" aria-pressed="true">Tumu <span data-rec-count="all">0</span></button>
+              <button type="button" class="rec-filter-btn" data-rec-filter="play" aria-pressed="false">Oyna adayi <span data-rec-count="play">0</span></button>
+              <button type="button" class="rec-filter-btn" data-rec-filter="watch" aria-pressed="false">Sadece izle <span data-rec-count="watch">0</span></button>
             </div>
             <p class="my-matches-empty" id="recommendationEmpty">
               Su an aktif oneri yok. Sistem degerli bir firsat buldugunda burada gorunur.
@@ -5352,6 +5418,8 @@
       }
 
       function applyLastScan(lastScan) {
+        latestScanInfo =
+          lastScan && typeof lastScan === "object" ? lastScan : null;
         if (!scanDetailMeta || !scanDetailHint || !scanDetailGrid) return;
 
         if (!lastScan || typeof lastScan !== "object") {
@@ -5759,23 +5827,122 @@
         );
       }
 
+      var REC_FILTER_STORAGE_KEY = "sqe_panel_rec_filter_v1";
+      var REC_SEEN_STORAGE_KEY = "sqe_panel_rec_seen_v1";
+      var recFilterMode = "all";
+      var latestRecommendations = [];
+      var latestScanInfo = null;
+
+      function isPlayableRec(rec) {
+        return rec && rec.stake !== null && rec.stake !== undefined && Number(rec.stake) > 0;
+      }
+
+      function readSeenRecIds() {
+        try {
+          var raw = localStorage.getItem(REC_SEEN_STORAGE_KEY) || "[]";
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+          return [];
+        }
+      }
+
+      function writeSeenRecIds(ids) {
+        try {
+          localStorage.setItem(REC_SEEN_STORAGE_KEY, JSON.stringify(ids.slice(-80)));
+        } catch (err) {
+          /* ignore */
+        }
+      }
+
+      function recEmptyText() {
+        var base = "Su an aktif oneri yok — bu normal: fiyat farki cikmadigi surece sistem sessiz kalir.";
+        if (!latestScanInfo || typeof latestScanInfo !== "object") return base;
+        var when = latestScanInfo.scanned_at ? String(latestScanInfo.scanned_at) : "";
+        var funnel = latestScanInfo.funnel || {};
+        var compared = Number(funnel.birlesik);
+        var detail = "";
+        if (when) detail += " Son tarama: " + when + ".";
+        if (isFinite(compared) && compared > 0) {
+          detail +=
+            " " + String(compared) +
+            " macta Nesine ile keskin piyasa karsilastirildi, hicbirinde Nesine yeterince yuksek kalmadi.";
+        }
+        return base + detail + " Firsat cikinca hem burada hem Telegram'da gorunur.";
+      }
+
+      function recPlainLine(rec, playable) {
+        var soft = Number(rec.soft_oran);
+        var fair = Number(rec.sharp_oran);
+        var ev = Number(rec.ev);
+        var parts = [];
+        if (isFinite(soft) && soft > 1) {
+          parts.push("Nesine bu bahse " + soft.toFixed(2) + " veriyor");
+        }
+        if (isFinite(fair) && fair > 1) {
+          parts.push("keskin piyasanin adil fiyati " + fair.toFixed(2));
+        }
+        var sentence = parts.length ? parts.join(", ") + "." : "";
+        if (isFinite(ev) && ev > 0) {
+          sentence +=
+            " Yani Nesine yaklasik %" + (ev * 100).toFixed(1) +
+            " fazla oduyor; deger farki bu.";
+        } else if (!playable) {
+          sentence += " Fark henuz oynamaya yetmiyor.";
+        }
+        return sentence.trim();
+      }
+
       function renderRecommendations(list) {
         var cards = document.getElementById("recommendationCards");
         var empty = document.getElementById("recommendationEmpty");
         var count = document.getElementById("recommendationCount");
         var summary = document.getElementById("sectionBildirimSummary");
         if (!cards) return;
-        var items = Array.isArray(list) ? list : [];
-        if (count) count.textContent = String(items.length) + " oneri";
-        if (summary) summary.textContent = items.length ? String(items.length) + " oneri" : "—";
+        var all = Array.isArray(list) ? list : [];
+        latestRecommendations = all;
+
+        var playCount = all.filter(isPlayableRec).length;
+        var watchCount = all.length - playCount;
+        var counters = { all: all.length, play: playCount, watch: watchCount };
+        document.querySelectorAll("[data-rec-count]").forEach(function (el) {
+          var key = el.getAttribute("data-rec-count");
+          el.textContent = String(counters[key] === undefined ? 0 : counters[key]);
+        });
+
+        var seen = readSeenRecIds();
+        var freshIds = [];
+        var items = all.filter(function (rec) {
+          if (recFilterMode === "play") return isPlayableRec(rec);
+          if (recFilterMode === "watch") return !isPlayableRec(rec);
+          return true;
+        });
+
+        if (count) {
+          count.textContent =
+            String(all.length) + " oneri" +
+            (recFilterMode === "all" ? "" : " · " + String(items.length) + " gosteriliyor");
+        }
+        if (summary) {
+          summary.textContent = all.length
+            ? String(playCount) + " oyna · " + String(watchCount) + " izle"
+            : "—";
+        }
         if (!items.length) {
-          if (empty) empty.hidden = false;
+          if (empty) {
+            empty.hidden = false;
+            empty.textContent = all.length
+              ? "Bu filtrede oneri yok. \"Tumu\" sekmesinde " + String(all.length) + " kayit var."
+              : recEmptyText();
+          }
           cards.innerHTML = "";
           return;
         }
         if (empty) empty.hidden = true;
         cards.innerHTML = items
           .map(function (rec) {
+            var recIsNew = !!rec.match_id && seen.indexOf(String(rec.match_id)) === -1;
+            if (rec.match_id) freshIds.push(String(rec.match_id));
             var macAdi = rec.mac_adi || "—";
             var market = rec.market_label || rec.market || "—";
             var oran = formatOdds(rec.soft_oran);
@@ -5787,8 +5954,9 @@
               ? '<span class="match-badge match-badge-pending">ONERI</span>'
               : '<span class="match-badge match-badge-suspended">IZLE</span>';
             var note = hasStake
-              ? "Nesine'de bu orani (ya da daha iyisini) bul ve tutari oyna; sonra asagidan Oynadim'a bas."
-              : "Sistem bu maci izliyor; oynamak icin daha guclu sinyal bekleniyor.";
+              ? "Ne yapmali: Nesine'de bu orani (ya da daha iyisini) bul, tutari oyna ve asagidan Oynadim'a bas."
+              : "Ne yapmali: simdilik bir sey yapma. Sistem bu maci izliyor, fark buyurse oyna adayina doner.";
+            var plainLine = recPlainLine(rec, hasStake);
             var recMatchId = rec.match_id || "";
             var recOranRaw =
               rec.soft_oran != null && isFinite(Number(rec.soft_oran))
@@ -5811,7 +5979,9 @@
               '<div class="match-card-head">' +
               '<div class="match-card-title">' +
               escapeHtml(macAdi) +
-              ' <span class="nesine-tag">NESINE</span></div>' +
+              ' <span class="nesine-tag">NESINE</span>' +
+              (recIsNew ? '<span class="rec-new-tag">YENI</span>' : "") +
+              "</div>" +
               badge +
               "</div>" +
               '<div class="match-card-meta">' +
@@ -5829,7 +5999,8 @@
                 : "") +
               "</div>" +
               freshnessLineHtml(rec) +
-              '<div class="match-card-track">' +
+              (plainLine ? '<div class="rec-plain">' + escapeHtml(plainLine) + "</div>" : "") +
+              '<div class="rec-todo">' +
               escapeHtml(note) +
               "</div>" +
               recActionsHtml +
@@ -5837,6 +6008,37 @@
             );
           })
           .join("");
+        writeSeenRecIds(seen.concat(freshIds.filter(function (id) {
+          return seen.indexOf(id) === -1;
+        })));
+      }
+
+      function initRecFilter() {
+        try {
+          var saved = localStorage.getItem(REC_FILTER_STORAGE_KEY) || "";
+          if (saved === "play" || saved === "watch") recFilterMode = saved;
+        } catch (err) {
+          recFilterMode = "all";
+        }
+        document.querySelectorAll(".rec-filter-btn[data-rec-filter]").forEach(function (btn) {
+          var mode = btn.getAttribute("data-rec-filter");
+          btn.classList.toggle("active", mode === recFilterMode);
+          btn.setAttribute("aria-pressed", mode === recFilterMode ? "true" : "false");
+          btn.addEventListener("click", function () {
+            recFilterMode = mode || "all";
+            try {
+              localStorage.setItem(REC_FILTER_STORAGE_KEY, recFilterMode);
+            } catch (err) {
+              /* ignore */
+            }
+            document.querySelectorAll(".rec-filter-btn[data-rec-filter]").forEach(function (other) {
+              var active = other.getAttribute("data-rec-filter") === recFilterMode;
+              other.classList.toggle("active", active);
+              other.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            renderRecommendations(latestRecommendations);
+          });
+        });
       }
 
       function renderMyMatches(pendingKupons, recentKupons) {
@@ -6499,6 +6701,8 @@
 
       function renderMeasurementToggle(data) {
         applyMeasurementVisual(data.measurement_mode === true, data.measurement_report);
+        var recModeNote = document.getElementById("recModeNote");
+        if (recModeNote) recModeNote.hidden = data.measurement_mode !== true;
       }
 
       function toggleMeasurementMode() {
@@ -6657,6 +6861,8 @@
               : Math.round(headerKasaVal).toLocaleString("tr-TR") + " TL";
         }
         metricRisk.textContent = formatRisk(data.risk_per_trade);
+        latestScanInfo =
+          data.last_scan && typeof data.last_scan === "object" ? data.last_scan : null;
         renderRecommendations(data.recommendations);
         renderMyMatches(data.pending_kupons, data.recent_kupons);
         applyPerformanceStats(data.performance);
@@ -7074,6 +7280,7 @@
       initSections();
       initViewMode();
       initHintDots();
+      initRecFilter();
       bindExclusivePanelAccordions();
       fetchStatus();
       fetchFinanceMetrics();

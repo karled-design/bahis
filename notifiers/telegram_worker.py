@@ -610,6 +610,8 @@ def get_active_recommendations() -> list[dict[str, Any]]:
                 "market": market,
                 "market_label": market_label,
                 "soft_oran": float(entry.get("soft_oran", 0.0) or 0.0),
+                "sharp_oran": float(entry.get("sharp_oran", 0.0) or 0.0),
+                "ev": _context_ev(entry),
                 "stake": stake_value,
                 "commence_time": str(entry.get("commence_time", "") or ""),
                 "cached_at": cached_at,
