@@ -191,6 +191,7 @@ def _match_rss_hits(match: dict[str, Any], items: list[dict[str, Any]]) -> list[
             {
                 "title": title,
                 "source": str(item.get("source_label", "")),
+                "published_at": str(item.get("published_at", "")),
                 "teams": sorted(team_keys),
             }
         )

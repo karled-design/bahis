@@ -86,6 +86,12 @@ from core.steam_detector import (
     filter_uncooled,
     mark_notified,
 )
+from core.news_trigger import (
+    NEWS_TIER,
+    NewsSignal,
+    build_news_message,
+    split_news_confirmed,
+)
 from core.fixture_notify_guard import record_fixture_telegram_sent
 from notifiers import telegram_worker
 from notifiers.telegram_reset import DEFAULT_PANEL_PORT
@@ -152,6 +158,7 @@ class _ScanCycleStats(TypedDict):
     telegram: int
     izle: int
     steam: int
+    haber: int
     notify_gate: int
     cooldown: int
     hero_pass: int
@@ -187,6 +194,7 @@ def _new_scan_cycle_stats() -> _ScanCycleStats:
         "telegram": 0,
         "izle": 0,
         "steam": 0,
+        "haber": 0,
         "notify_gate": 0,
         "cooldown": 0,
         "hero_pass": 0,
@@ -214,7 +222,8 @@ def _format_scan_cycle_summary(stats: _ScanCycleStats) -> str:
         f"watch={stats['watch']} | "
         f"action={stats['action']} | high={stats['high']} | "
         f"aday={stats['aday']} | telegram={stats['telegram']} | "
-        f"izle={stats['izle']} | steam={stats.get('steam', 0)} | notify_gate={stats['notify_gate']} | cooldown={stats['cooldown']} | "
+        f"izle={stats['izle']} | steam={stats.get('steam', 0)} | "
+        f"haber={stats.get('haber', 0)} | notify_gate={stats['notify_gate']} | cooldown={stats['cooldown']} | "
         f"hero_pass={stats.get('hero_pass', 0)} | hero_reject_guven={stats.get('hero_reject_low_confidence', 0)} | "
         f"hero_reject_form={stats.get('hero_reject_context', 0)} | hero_reject_piyasa={stats.get('hero_reject_market', 0)} | "
         f"hero_daily_limit={stats.get('hero_daily_limit', 0)} | hero_loss_stop={stats.get('hero_loss_stop', 0)} | "
@@ -532,6 +541,11 @@ def _dispatch_steam_notifications(
     if not signals:
         return 0
 
+    # Hareketin arkasinda taze bir haber varsa sinyal HABER katmanina gecer:
+    # ayni mac icin iki bildirim gitmez, CLV'leri ayri olculur.
+    news_signals, signals = split_news_confirmed(signals, matches)
+    news_count = _dispatch_news_notifications(news_signals, cycle_id, cycle_stats)
+
     measuring = is_measurement_mode_enabled()
     sent_count = 0
     for signal in signals[:_STEAM_MAX_PER_CYCLE]:
@@ -567,14 +581,74 @@ def _dispatch_steam_notifications(
 
     if cycle_stats is not None:
         cycle_stats["steam"] += sent_count
+    return sent_count + news_count
+
+
+_NEWS_MAX_PER_CYCLE = 3
+
+
+def _dispatch_news_notifications(
+    signals: list[NewsSignal],
+    cycle_id: str | None,
+    cycle_stats: _ScanCycleStats | None = None,
+) -> int:
+    """Haberle dogrulanmis fiyat hareketlerini IZLE bildirimi olarak gonderir.
+
+    Kupon ASLA acilmaz (match_id/stake yok); olcum modunda ayri katmanla (HABER)
+    deftere yazilir, boylece sebebi bilinen hareketin CLV'si ayri gorulur.
+    """
+    if not signals:
+        return 0
+
+    measuring = is_measurement_mode_enabled()
+    sent_count = 0
+    for signal in signals[:_NEWS_MAX_PER_CYCLE]:
+        steam = signal.steam
+        sent = telegram_worker.send_alert(
+            message=build_news_message(signal),
+            match_id=None,
+            stake=None,
+            soft_odds=steam.soft_odds,
+            mac_adi=steam.match_name,
+            market=steam.market,
+            sport_key=steam.sport_key,
+            event_id=steam.event_id or None,
+            commence_time=steam.commence_time or None,
+            bypass_scan_gate=True,
+        )
+        if not sent:
+            print(
+                f"[SQE-V1] Haber bildirimi basarisiz | mac={steam.match_name}",
+                file=sys.stderr,
+            )
+            continue
+
+        mark_notified(steam)
+        sent_count += 1
+        if measuring:
+            _record_steam_measurement(steam, cycle_id, tier=NEWS_TIER)
+        print(
+            f"[SQE-V1] HABER | mac={steam.match_name} | market={steam.market} | "
+            f"sharp={steam.onceki_sharp}->{steam.sharp_odds} "
+            f"(%{steam.sharp_drop * 100.0:.1f}) | nesine={steam.soft_odds} | "
+            f"haber_dk={signal.news_age_minutes}"
+        )
+
+    if cycle_stats is not None:
+        cycle_stats["haber"] += sent_count
     return sent_count
 
 
-def _record_steam_measurement(signal: SteamSignal, cycle_id: str | None) -> None:
+def _record_steam_measurement(
+    signal: SteamSignal,
+    cycle_id: str | None,
+    *,
+    tier: str = STEAM_TIER,
+) -> None:
     record_measurement_signal(
         mac_adi=signal.match_name,
         market=signal.market,
-        tier=STEAM_TIER,
+        tier=tier,
         soft_odds=signal.soft_odds,
         sharp_odds=signal.sharp_odds,
         ev=(signal.soft_odds / signal.sharp_odds) - 1.0,

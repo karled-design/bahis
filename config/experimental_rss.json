@@ -14,6 +14,21 @@
       "id": "fenerbahce",
       "label": "Fenerbahce",
       "url": "https://www.fenerbahce.org/rss/news"
+    },
+    {
+      "id": "bbc_football",
+      "label": "BBC Football",
+      "url": "https://feeds.bbci.co.uk/sport/football/rss.xml"
+    },
+    {
+      "id": "sky_football",
+      "label": "Sky Sports Football",
+      "url": "https://www.skysports.com/rss/12040"
+    },
+    {
+      "id": "guardian_football",
+      "label": "Guardian Football",
+      "url": "https://www.theguardian.com/football/rss"
     }
   ]
 }
