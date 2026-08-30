@@ -86,6 +86,14 @@ Sistem arka planda diğer maçları tarar; **tüm tarama listesini** panelde gö
 > **Geliştirici / bakım:** Teknik manifest → [`docs/panel-ui-manifest.md`](docs/panel-ui-manifest.md)  
 > Panel UI güncellenince bu bölüm ve manifest birlikte kontrol edilir.
 
+### İlk açılış: 4 adımlık rehber
+
+Paneli ilk kez açtığınızda ekranın ortasında 4 adımlık kısa bir rehber çıkar:
+sistem ne yapar → Fırsatlar kartı nasıl okunur → ölçüm modu neden güvenli →
+Basit/Uzman görünümü. **Atla** ya da son adımdaki **Anladım, başla** dedikten
+sonra bir daha çıkmaz (Escape de kapatır). Tekrar görmek isterseniz:
+**Yardim → Ilk kullanim rehberini tekrar goster**.
+
 ### Sekmeler ve görünüm modu
 
 Panelin üstünde (telefonda altında) kalıcı bir menü var:
