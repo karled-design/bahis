@@ -917,8 +917,110 @@
       .system-status-led {
         animation: none !important;
       }
-      .toast {
-        transition: none;
+      .toast,
+      .onboard-overlay,
+      .onboard-card {
+        transition: none !important;
+        animation: none !important;
+      }
+    }
+
+    /* Ilk kullanim rehberi */
+    .onboard-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: rgba(1, 4, 9, 0.78);
+    }
+    .onboard-overlay[hidden] { display: none; }
+    .onboard-card {
+      width: 100%;
+      max-width: 420px;
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+    }
+    .onboard-step {
+      margin: 0 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--warning);
+      text-transform: uppercase;
+    }
+    .onboard-title {
+      margin: 0 0 8px;
+      font-size: 18px;
+      line-height: 1.35;
+      color: #e6edf3;
+    }
+    .onboard-text {
+      margin: 0 0 16px;
+      font-size: 13.5px;
+      line-height: 1.6;
+      color: #b9c2cc;
+    }
+    .onboard-dots {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+    .onboard-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #30363d;
+    }
+    .onboard-dot.active { background: var(--warning); }
+    .onboard-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .onboard-btn {
+      min-height: 44px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: 1px solid #30363d;
+      background: #21262d;
+      color: #e6edf3;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .onboard-btn-next {
+      flex: 1;
+      background: #1f6f3f;
+      border-color: #2ea043;
+      color: #ffffff;
+    }
+    .onboard-btn-next:hover { background: #2ea043; }
+    .onboard-btn-ghost {
+      background: transparent;
+      color: #8b949e;
+    }
+    .onboard-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    @media (max-width: 560px) {
+      .onboard-card { padding: 16px; }
+      .onboard-title { font-size: 16px; }
+    }
+
+    /* Dokunma hedefi: telefonda kucuk butonlar 44px'e cikar */
+    @media (max-width: 900px) {
+      .rec-filter-btn,
+      .view-mode-btn {
+        min-height: 44px;
+        padding-left: 14px;
+        padding-right: 14px;
       }
     }
 
@@ -1990,6 +2092,64 @@
       color: #8b949e;
     }
     .rec-btn-skip:hover { color: #e6edf3; border-color: #6f8199; }
+    /* Bildirim merkezi: olcum notu, filtreler, insan dili ozet */
+    .rec-mode-note {
+      margin: 0 0 10px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(210, 153, 34, 0.35);
+      background: rgba(210, 153, 34, 0.10);
+      color: #d29922;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .rec-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .rec-filter-btn {
+      padding: 6px 12px;
+      min-height: 32px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 999px;
+      border: 1px solid #30363d;
+      background: transparent;
+      color: #8b949e;
+      cursor: pointer;
+    }
+    .rec-filter-btn.active {
+      color: #d29922;
+      border-color: rgba(210, 153, 34, 0.55);
+      background: rgba(210, 153, 34, 0.12);
+    }
+    .rec-filter-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+    .rec-plain {
+      margin-top: 8px;
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #e6edf3;
+    }
+    .rec-todo {
+      margin-top: 4px;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #8b949e;
+    }
+    .rec-new-tag {
+      margin-left: 6px;
+      padding: 1px 6px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #3fb950;
+      border: 1px solid rgba(63, 185, 80, 0.45);
+    }
     .realized-line {
       margin-top: 6px;
       font-size: 11px;
@@ -3311,6 +3471,74 @@
     .strategy-card-note.strategy-card-warn {
       color: var(--warning);
     }
+
+    /* Gorunum modu: Basit / Uzman */
+    .view-mode-switch {
+      display: inline-flex;
+      gap: 2px;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--bg-panel);
+    }
+
+    .view-mode-btn {
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 12px;
+      min-height: 32px;
+      border-radius: 999px;
+      cursor: pointer;
+    }
+
+    .view-mode-btn.active {
+      background: rgba(210, 153, 34, 0.13);
+      color: var(--warning);
+      box-shadow: inset 0 0 0 1px rgba(210, 153, 34, 0.35);
+    }
+
+    .view-mode-btn:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
+    body:not(.mode-expert) [data-expert-only] {
+      display: none !important;
+    }
+
+    /* Terim ipucu noktasi */
+    .hint-dot {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 16px;
+      height: 16px;
+      margin-left: 6px;
+      padding: 0;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-dim);
+      font-size: 10px;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
+      vertical-align: middle;
+    }
+
+    .hint-dot:hover,
+    .hint-dot:focus-visible {
+      color: var(--warning);
+      border-color: rgba(210, 153, 34, 0.55);
+    }
+
+    .hint-dot:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 <body>
@@ -3319,6 +3547,10 @@
       <div class="header-row">
         <h1 class="title">Nesine Değer Avcısı</h1>
         <div class="header-actions">
+          <div class="view-mode-switch" id="viewModeSwitch" role="group" aria-label="Gorunum modu">
+            <button type="button" class="view-mode-btn active" data-view-mode="basit">Basit</button>
+            <button type="button" class="view-mode-btn" data-view-mode="uzman">Uzman</button>
+          </div>
           <span class="header-kasa" id="headerKasa" title="Kayitli butceniz">—</span>
           <div class="shutter-wrap" id="scanShutterWrap" role="switch" aria-checked="false" aria-label="Tarama salteri" tabindex="0">
             <span class="shutter-label">Salter</span>
@@ -3361,15 +3593,24 @@
         <div class="now-item"><span id="statusStripScan">Son tarama: —</span></div>
         <div class="now-item">Bekleyen: <span id="metricOpenMatches">—</span></div>
         <div class="now-item"><span id="statusStripToday">Bugun bildirim: —</span></div>
-        <div class="now-item"><span id="statusStripCredits">API kredisi: —</span></div>
+        <div class="now-item" data-expert-only><span id="statusStripCredits">API kredisi: —</span></div>
       </div>
     </section>
+
+    <nav class="tab-nav tab-nav-top" id="sectionNavTop" aria-label="Bolum menusu">
+      <button type="button" class="tab-btn" data-section="bildirim">Firsatlar</button>
+      <button type="button" class="tab-btn" data-section="kupon">Kuponlarim</button>
+      <button type="button" class="tab-btn" data-section="kasa">Karne</button>
+      <button type="button" class="tab-btn" data-section="strateji" data-expert-only>Strateji</button>
+      <button type="button" class="tab-btn" data-section="ayarlar">Ayarlar</button>
+      <button type="button" class="tab-btn" data-section="yardim">Yardim</button>
+    </nav>
 
     <main class="panel-sections" id="panelSections">
 
       <details class="panel-section" id="sectionKasa" data-section="kasa">
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Kasa ve performans<span class="ui-accordion-sub">butce, getiri, kanit karnesi</span></span>
+          <span class="accordion-title-wrap">Karne ve kasa<span class="ui-accordion-sub">butceniz, kar oraniniz ve sistemin kaniti</span></span>
           <span class="accordion-summary-value" id="overviewSecondarySummaryValue">—</span>
         </summary>
         <div class="panel-section-body">
@@ -3419,7 +3660,7 @@
           <section class="clv-scorecard" id="clvScorecard" aria-label="Kanit Karnesi">
             <div class="clv-scorecard-head">
               <span class="clv-kanit-tag">KANIT</span>
-              <span class="clv-scorecard-title">Kanit Karnesi</span>
+              <span class="clv-scorecard-title">Kanit Karnesi<button type="button" class="hint-dot" data-hint="Kanit Karnesi: aldigimiz oran, mac baslarkenki son orandan iyi miydi? Sonuctan bagimsiz olarak 'fiyat dogru muydu' sorusunu olcer." aria-label="Kanit Karnesi nedir?">?</button></span>
               <span class="clv-scorecard-sub">Bildirimden sonra oran lehimize kaydi mi?</span>
             </div>
             <div class="proof-badge test" id="proofBadge" hidden>
@@ -3461,7 +3702,7 @@
           </section>
           <section class="metrics metrics-secondary">
             <article class="metric-card">
-              <div class="metric-label">Getiri (her 100 TL icin)</div>
+              <div class="metric-label">Getiri (her 100 TL icin)<button type="button" class="hint-dot" data-hint="Getiri (ROI): yatirdiginiz her 100 TL'nin ne kadar kar/zarar getirdigi. Artiysa kardasiniz." aria-label="Getiri nedir?">?</button></div>
               <div class="metric-value" id="metricRoi">—</div>
             </article>
           </section>
@@ -3508,14 +3749,22 @@
 
       <details class="panel-section" id="sectionBildirim" data-section="bildirim" open>
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Gelen bildirimler<span class="ui-accordion-sub">degerli bahis onerileri — panelden takip</span></span>
+          <span class="accordion-title-wrap">Firsatlar<span class="ui-accordion-sub">sistemin buldugu oneriler — ne yapmali burada yazar</span></span>
           <span class="accordion-summary-value" id="sectionBildirimSummary">—</span>
         </summary>
         <div class="panel-section-body">
           <section class="table-wrap">
             <div class="table-head">
-              <span class="table-title">Aktif oneriler</span>
+              <span class="table-title">Aktif oneriler<button type="button" class="hint-dot" data-hint="Oneri: Nesine'nin oraninin keskin piyasadan daha yuksek kaldigi maclar. Olcum modunda gercek kupon acilmaz, kasa degismez." aria-label="Oneri nedir?">?</button></span>
               <span class="sync-note" id="recommendationCount">0 oneri</span>
+            </div>
+            <p class="rec-mode-note" id="recModeNote" hidden>
+              Olcum modu acik: buradaki hicbir islem gercek kupon acmaz, kasaniz degismez. Oynadim'a basarsaniz yalnizca "ben bunu oynadim" notu dusulur.
+            </p>
+            <div class="rec-filter" id="recFilter" role="group" aria-label="Oneri filtresi">
+              <button type="button" class="rec-filter-btn active" data-rec-filter="all" aria-pressed="true">Tumu <span data-rec-count="all">0</span></button>
+              <button type="button" class="rec-filter-btn" data-rec-filter="play" aria-pressed="false">Oyna adayi <span data-rec-count="play">0</span></button>
+              <button type="button" class="rec-filter-btn" data-rec-filter="watch" aria-pressed="false">Sadece izle <span data-rec-count="watch">0</span></button>
             </div>
             <p class="my-matches-empty" id="recommendationEmpty">
               Su an aktif oneri yok. Sistem degerli bir firsat buldugunda burada gorunur.
@@ -3527,7 +3776,7 @@
 
       <details class="panel-section" id="sectionKupon" data-section="kupon">
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Kuponlar ve maclar<span class="ui-accordion-sub">oynadiginiz kuponlar ve sonuclari</span></span>
+          <span class="accordion-title-wrap">Kuponlarim<span class="ui-accordion-sub">oynadiginiz kuponlar ve sonuclari</span></span>
           <span class="accordion-summary-value" id="sectionKuponSummary">—</span>
         </summary>
         <div class="panel-section-body">
@@ -3571,15 +3820,15 @@
         </div>
       </details>
 
-      <details class="panel-section" id="sectionStrateji" data-section="strateji">
+      <details class="panel-section" id="sectionStrateji" data-section="strateji" data-expert-only>
         <summary class="panel-section-summary">
-          <span class="accordion-title-wrap">Stratejiler<span class="ui-accordion-sub">kazanc mantiklari — HERO ve yeni kartlar</span></span>
+          <span class="accordion-title-wrap">Stratejiler<span class="ui-accordion-sub">uzman ayarlari — secici mod (HERO) ve yeni kartlar</span></span>
           <span class="accordion-summary-value" id="strategySummaryValue">—</span>
         </summary>
         <div class="panel-section-body">
                 <div class="notify-frequency-panel hero-mode-panel settings-card" id="heroModePanel">
                   <div class="hero-mode-head">
-                    <div class="hero-mode-title">Iyi Adam Modu (HERO)</div>
+                    <div class="hero-mode-title">Secici mod (HERO)<button type="button" class="hint-dot" data-hint="Secici mod: daha az ama daha guven veren oneri. Kapaliyken sistem saf deger avcisi gibi calisir (daha cok, daha ham oneri)." aria-label="Secici mod nedir?">?</button></div>
                     <label class="hero-mode-switch">
                       <input type="checkbox" id="heroModeToggle" />
                       <span id="heroModeLabel">Kapali</span>
@@ -3807,6 +4056,10 @@
           <section class="settings-zone settings-zone-help" aria-label="Baslangic rehberi">
             <h2 class="settings-zone-title">Baslangic rehberi</h2>
 
+            <button type="button" class="onboard-btn" id="onboardReplay">
+              Ilk kullanim rehberini tekrar goster
+            </button>
+
             <details class="ui-accordion ui-accordion-help" id="helpWhatIsThis">
               <summary class="ui-accordion-summary">
                 <span class="accordion-title-wrap">Bu sistem ne yapar?<span class="ui-accordion-sub">deger bahsi — 2 dakikada</span></span>
@@ -3960,12 +4213,27 @@
     </main>
 
     <nav class="tab-nav tab-nav-bottom" id="sectionNavBottom" aria-label="Bolum menusu">
-      <button type="button" class="tab-btn" data-section="kasa">Kasa</button>
-      <button type="button" class="tab-btn" data-section="kupon">Kuponlar</button>
-      <button type="button" class="tab-btn" data-section="strateji">Strateji</button>
+      <button type="button" class="tab-btn" data-section="bildirim">Firsatlar</button>
+      <button type="button" class="tab-btn" data-section="kupon">Kuponlarim</button>
+      <button type="button" class="tab-btn" data-section="kasa">Karne</button>
+      <button type="button" class="tab-btn" data-section="strateji" data-expert-only>Strateji</button>
       <button type="button" class="tab-btn" data-section="ayarlar">Ayarlar</button>
       <button type="button" class="tab-btn" data-section="yardim">Yardim</button>
     </nav>
+
+    <div class="onboard-overlay" id="onboardOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+      <div class="onboard-card">
+        <p class="onboard-step" id="onboardStep">Adim 1 / 4</p>
+        <h2 class="onboard-title" id="onboardTitle">—</h2>
+        <p class="onboard-text" id="onboardText">—</p>
+        <div class="onboard-dots" id="onboardDots" aria-hidden="true"></div>
+        <div class="onboard-actions">
+          <button type="button" class="onboard-btn onboard-btn-ghost" id="onboardSkip">Atla</button>
+          <button type="button" class="onboard-btn" id="onboardBack">Geri</button>
+          <button type="button" class="onboard-btn onboard-btn-next" id="onboardNext">Ileri</button>
+        </div>
+      </div>
+    </div>
 
     <div class="toast-stack" id="toastStack" aria-live="polite"></div>
 
@@ -4219,6 +4487,193 @@
           saved = "";
         }
         if (saved) openSection(saved, false);
+      }
+
+      var VIEW_MODE_STORAGE_KEY = "sqe_panel_view_mode_v1";
+      var EXPERT_SECTIONS = ["strateji"];
+
+      function applyViewMode(mode) {
+        var expert = mode === "uzman";
+        document.body.classList.toggle("mode-expert", expert);
+        document.querySelectorAll(".view-mode-btn[data-view-mode]").forEach(function (btn) {
+          var active = btn.getAttribute("data-view-mode") === (expert ? "uzman" : "basit");
+          btn.classList.toggle("active", active);
+          btn.setAttribute("aria-pressed", active ? "true" : "false");
+        });
+        if (!expert) {
+          EXPERT_SECTIONS.forEach(function (id) {
+            var section = document.querySelector(
+              'details.panel-section[data-section="' + id + '"]'
+            );
+            if (section && section.open) {
+              section.open = false;
+              openSection("bildirim", false);
+            }
+          });
+        }
+        try {
+          localStorage.setItem(VIEW_MODE_STORAGE_KEY, expert ? "uzman" : "basit");
+        } catch (err) {
+          /* ignore */
+        }
+      }
+
+      function initViewMode() {
+        var saved = "";
+        try {
+          saved = localStorage.getItem(VIEW_MODE_STORAGE_KEY) || "";
+        } catch (err) {
+          saved = "";
+        }
+        applyViewMode(saved === "uzman" ? "uzman" : "basit");
+        document.querySelectorAll(".view-mode-btn[data-view-mode]").forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            var mode = btn.getAttribute("data-view-mode");
+            applyViewMode(mode);
+            showToast(
+              mode === "uzman"
+                ? "Uzman gorunum: tum teknik detaylar acildi"
+                : "Basit gorunum: yalnizca gerekli bilgiler"
+            );
+          });
+        });
+      }
+
+      function initHintDots() {
+        document.addEventListener("click", function (event) {
+          var target = event.target;
+          if (!target || !target.closest) return;
+          var dot = target.closest(".hint-dot[data-hint]");
+          if (!dot) return;
+          event.preventDefault();
+          event.stopPropagation();
+          showToast(dot.getAttribute("data-hint") || "", 6000);
+        });
+      }
+
+      var ONBOARD_STORAGE_KEY = "sqe_panel_onboard_v1";
+      var ONBOARD_STEPS = [
+        {
+          title: "Bu panel ne yapar?",
+          text:
+            "Nesine'nin orani ile dunyanin en keskin bahis piyasalarinin fiyatini surekli karsilastirir. " +
+            "Nesine yuksek kaldiginda size haber verir. Maci tahmin etmiyoruz; yanlis fiyatlanmis orani ariyoruz."
+        },
+        {
+          title: "Firsatlar sekmesi",
+          text:
+            "Sistem bir sey bulunca kart olarak burada cikar. Kart once ne oldugunu yazar " +
+            "(\"Nesine 2.20 veriyor, adil fiyat 2.00\"), sonra ne yapmaniz gerektigini soyler. " +
+            "IZLE yazan kartlarda hicbir sey yapmayin."
+        },
+        {
+          title: "Su an olcum modundayiz",
+          text:
+            "Hicbir gercek kupon acilmaz, kasaniz degismez. Oynadim dugmesi yalnizca not duser. " +
+            "Amac once sistemin fiyatlarinin dogru oldugunu kanitlamak — bunu Karne sekmesindeki Kanit Karnesi gosterir."
+        },
+        {
+          title: "Basit ve Uzman gorunumu",
+          text:
+            "Sag ustteki anahtar Basit'te kalirsa yalnizca isinize yarayan bilgiyi gorursunuz. " +
+            "Uzman'a alirsaniz strateji ayarlari ve teknik sayaclar acilir. Terimlerin yanindaki ? isaretine dokunun."
+        }
+      ];
+      var onboardIndex = 0;
+
+      function renderOnboardStep() {
+        var stepEl = document.getElementById("onboardStep");
+        var titleEl = document.getElementById("onboardTitle");
+        var textEl = document.getElementById("onboardText");
+        var dotsEl = document.getElementById("onboardDots");
+        var backBtn = document.getElementById("onboardBack");
+        var nextBtn = document.getElementById("onboardNext");
+        var step = ONBOARD_STEPS[onboardIndex];
+        if (!step) return;
+        if (stepEl) {
+          stepEl.textContent =
+            "Adim " + String(onboardIndex + 1) + " / " + String(ONBOARD_STEPS.length);
+        }
+        if (titleEl) titleEl.textContent = step.title;
+        if (textEl) textEl.textContent = step.text;
+        if (dotsEl) {
+          dotsEl.innerHTML = ONBOARD_STEPS.map(function (_, idx) {
+            return '<span class="onboard-dot' + (idx === onboardIndex ? " active" : "") + '"></span>';
+          }).join("");
+        }
+        if (backBtn) backBtn.hidden = onboardIndex === 0;
+        if (nextBtn) {
+          nextBtn.textContent =
+            onboardIndex === ONBOARD_STEPS.length - 1 ? "Anladim, basla" : "Ileri";
+        }
+      }
+
+      function closeOnboarding(markSeen) {
+        var overlay = document.getElementById("onboardOverlay");
+        if (overlay) overlay.hidden = true;
+        if (markSeen) {
+          try {
+            localStorage.setItem(ONBOARD_STORAGE_KEY, "1");
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      }
+
+      function openOnboarding() {
+        var overlay = document.getElementById("onboardOverlay");
+        if (!overlay) return;
+        onboardIndex = 0;
+        renderOnboardStep();
+        overlay.hidden = false;
+        var nextBtn = document.getElementById("onboardNext");
+        if (nextBtn) nextBtn.focus();
+      }
+
+      function initOnboarding() {
+        var overlay = document.getElementById("onboardOverlay");
+        if (!overlay) return;
+        var backBtn = document.getElementById("onboardBack");
+        var nextBtn = document.getElementById("onboardNext");
+        var skipBtn = document.getElementById("onboardSkip");
+        var replayBtn = document.getElementById("onboardReplay");
+        if (backBtn) {
+          backBtn.addEventListener("click", function () {
+            if (onboardIndex > 0) onboardIndex -= 1;
+            renderOnboardStep();
+          });
+        }
+        if (nextBtn) {
+          nextBtn.addEventListener("click", function () {
+            if (onboardIndex < ONBOARD_STEPS.length - 1) {
+              onboardIndex += 1;
+              renderOnboardStep();
+              return;
+            }
+            closeOnboarding(true);
+            openSection("bildirim", false);
+          });
+        }
+        if (skipBtn) {
+          skipBtn.addEventListener("click", function () {
+            closeOnboarding(true);
+          });
+        }
+        if (replayBtn) {
+          replayBtn.addEventListener("click", function () {
+            openOnboarding();
+          });
+        }
+        document.addEventListener("keydown", function (event) {
+          if (event.key === "Escape" && !overlay.hidden) closeOnboarding(true);
+        });
+        var seen = "";
+        try {
+          seen = localStorage.getItem(ONBOARD_STORAGE_KEY) || "";
+        } catch (err) {
+          seen = "1";
+        }
+        if (!seen) openOnboarding();
       }
 
       var ZONE_LABELS = {
@@ -5208,6 +5663,8 @@
       }
 
       function applyLastScan(lastScan) {
+        latestScanInfo =
+          lastScan && typeof lastScan === "object" ? lastScan : null;
         if (!scanDetailMeta || !scanDetailHint || !scanDetailGrid) return;
 
         if (!lastScan || typeof lastScan !== "object") {
@@ -5615,23 +6072,122 @@
         );
       }
 
+      var REC_FILTER_STORAGE_KEY = "sqe_panel_rec_filter_v1";
+      var REC_SEEN_STORAGE_KEY = "sqe_panel_rec_seen_v1";
+      var recFilterMode = "all";
+      var latestRecommendations = [];
+      var latestScanInfo = null;
+
+      function isPlayableRec(rec) {
+        return rec && rec.stake !== null && rec.stake !== undefined && Number(rec.stake) > 0;
+      }
+
+      function readSeenRecIds() {
+        try {
+          var raw = localStorage.getItem(REC_SEEN_STORAGE_KEY) || "[]";
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch (err) {
+          return [];
+        }
+      }
+
+      function writeSeenRecIds(ids) {
+        try {
+          localStorage.setItem(REC_SEEN_STORAGE_KEY, JSON.stringify(ids.slice(-80)));
+        } catch (err) {
+          /* ignore */
+        }
+      }
+
+      function recEmptyText() {
+        var base = "Su an aktif oneri yok — bu normal: fiyat farki cikmadigi surece sistem sessiz kalir.";
+        if (!latestScanInfo || typeof latestScanInfo !== "object") return base;
+        var when = latestScanInfo.scanned_at ? String(latestScanInfo.scanned_at) : "";
+        var funnel = latestScanInfo.funnel || {};
+        var compared = Number(funnel.birlesik);
+        var detail = "";
+        if (when) detail += " Son tarama: " + when + ".";
+        if (isFinite(compared) && compared > 0) {
+          detail +=
+            " " + String(compared) +
+            " macta Nesine ile keskin piyasa karsilastirildi, hicbirinde Nesine yeterince yuksek kalmadi.";
+        }
+        return base + detail + " Firsat cikinca hem burada hem Telegram'da gorunur.";
+      }
+
+      function recPlainLine(rec, playable) {
+        var soft = Number(rec.soft_oran);
+        var fair = Number(rec.sharp_oran);
+        var ev = Number(rec.ev);
+        var parts = [];
+        if (isFinite(soft) && soft > 1) {
+          parts.push("Nesine bu bahse " + soft.toFixed(2) + " veriyor");
+        }
+        if (isFinite(fair) && fair > 1) {
+          parts.push("keskin piyasanin adil fiyati " + fair.toFixed(2));
+        }
+        var sentence = parts.length ? parts.join(", ") + "." : "";
+        if (isFinite(ev) && ev > 0) {
+          sentence +=
+            " Yani Nesine yaklasik %" + (ev * 100).toFixed(1) +
+            " fazla oduyor; deger farki bu.";
+        } else if (!playable) {
+          sentence += " Fark henuz oynamaya yetmiyor.";
+        }
+        return sentence.trim();
+      }
+
       function renderRecommendations(list) {
         var cards = document.getElementById("recommendationCards");
         var empty = document.getElementById("recommendationEmpty");
         var count = document.getElementById("recommendationCount");
         var summary = document.getElementById("sectionBildirimSummary");
         if (!cards) return;
-        var items = Array.isArray(list) ? list : [];
-        if (count) count.textContent = String(items.length) + " oneri";
-        if (summary) summary.textContent = items.length ? String(items.length) + " oneri" : "—";
+        var all = Array.isArray(list) ? list : [];
+        latestRecommendations = all;
+
+        var playCount = all.filter(isPlayableRec).length;
+        var watchCount = all.length - playCount;
+        var counters = { all: all.length, play: playCount, watch: watchCount };
+        document.querySelectorAll("[data-rec-count]").forEach(function (el) {
+          var key = el.getAttribute("data-rec-count");
+          el.textContent = String(counters[key] === undefined ? 0 : counters[key]);
+        });
+
+        var seen = readSeenRecIds();
+        var freshIds = [];
+        var items = all.filter(function (rec) {
+          if (recFilterMode === "play") return isPlayableRec(rec);
+          if (recFilterMode === "watch") return !isPlayableRec(rec);
+          return true;
+        });
+
+        if (count) {
+          count.textContent =
+            String(all.length) + " oneri" +
+            (recFilterMode === "all" ? "" : " · " + String(items.length) + " gosteriliyor");
+        }
+        if (summary) {
+          summary.textContent = all.length
+            ? String(playCount) + " oyna · " + String(watchCount) + " izle"
+            : "—";
+        }
         if (!items.length) {
-          if (empty) empty.hidden = false;
+          if (empty) {
+            empty.hidden = false;
+            empty.textContent = all.length
+              ? "Bu filtrede oneri yok. \"Tumu\" sekmesinde " + String(all.length) + " kayit var."
+              : recEmptyText();
+          }
           cards.innerHTML = "";
           return;
         }
         if (empty) empty.hidden = true;
         cards.innerHTML = items
           .map(function (rec) {
+            var recIsNew = !!rec.match_id && seen.indexOf(String(rec.match_id)) === -1;
+            if (rec.match_id) freshIds.push(String(rec.match_id));
             var macAdi = rec.mac_adi || "—";
             var market = rec.market_label || rec.market || "—";
             var oran = formatOdds(rec.soft_oran);
@@ -5643,8 +6199,9 @@
               ? '<span class="match-badge match-badge-pending">ONERI</span>'
               : '<span class="match-badge match-badge-suspended">IZLE</span>';
             var note = hasStake
-              ? "Nesine'de bu orani (ya da daha iyisini) bul ve tutari oyna; sonra asagidan Oynadim'a bas."
-              : "Sistem bu maci izliyor; oynamak icin daha guclu sinyal bekleniyor.";
+              ? "Ne yapmali: Nesine'de bu orani (ya da daha iyisini) bul, tutari oyna ve asagidan Oynadim'a bas."
+              : "Ne yapmali: simdilik bir sey yapma. Sistem bu maci izliyor, fark buyurse oyna adayina doner.";
+            var plainLine = recPlainLine(rec, hasStake);
             var recMatchId = rec.match_id || "";
             var recOranRaw =
               rec.soft_oran != null && isFinite(Number(rec.soft_oran))
@@ -5667,7 +6224,9 @@
               '<div class="match-card-head">' +
               '<div class="match-card-title">' +
               escapeHtml(macAdi) +
-              ' <span class="nesine-tag">NESINE</span></div>' +
+              ' <span class="nesine-tag">NESINE</span>' +
+              (recIsNew ? '<span class="rec-new-tag">YENI</span>' : "") +
+              "</div>" +
               badge +
               "</div>" +
               '<div class="match-card-meta">' +
@@ -5685,7 +6244,8 @@
                 : "") +
               "</div>" +
               freshnessLineHtml(rec) +
-              '<div class="match-card-track">' +
+              (plainLine ? '<div class="rec-plain">' + escapeHtml(plainLine) + "</div>" : "") +
+              '<div class="rec-todo">' +
               escapeHtml(note) +
               "</div>" +
               recActionsHtml +
@@ -5693,6 +6253,37 @@
             );
           })
           .join("");
+        writeSeenRecIds(seen.concat(freshIds.filter(function (id) {
+          return seen.indexOf(id) === -1;
+        })));
+      }
+
+      function initRecFilter() {
+        try {
+          var saved = localStorage.getItem(REC_FILTER_STORAGE_KEY) || "";
+          if (saved === "play" || saved === "watch") recFilterMode = saved;
+        } catch (err) {
+          recFilterMode = "all";
+        }
+        document.querySelectorAll(".rec-filter-btn[data-rec-filter]").forEach(function (btn) {
+          var mode = btn.getAttribute("data-rec-filter");
+          btn.classList.toggle("active", mode === recFilterMode);
+          btn.setAttribute("aria-pressed", mode === recFilterMode ? "true" : "false");
+          btn.addEventListener("click", function () {
+            recFilterMode = mode || "all";
+            try {
+              localStorage.setItem(REC_FILTER_STORAGE_KEY, recFilterMode);
+            } catch (err) {
+              /* ignore */
+            }
+            document.querySelectorAll(".rec-filter-btn[data-rec-filter]").forEach(function (other) {
+              var active = other.getAttribute("data-rec-filter") === recFilterMode;
+              other.classList.toggle("active", active);
+              other.setAttribute("aria-pressed", active ? "true" : "false");
+            });
+            renderRecommendations(latestRecommendations);
+          });
+        });
       }
 
       function renderMyMatches(pendingKupons, recentKupons) {
@@ -6355,6 +6946,8 @@
 
       function renderMeasurementToggle(data) {
         applyMeasurementVisual(data.measurement_mode === true, data.measurement_report);
+        var recModeNote = document.getElementById("recModeNote");
+        if (recModeNote) recModeNote.hidden = data.measurement_mode !== true;
       }
 
       function toggleMeasurementMode() {
@@ -6513,6 +7106,8 @@
               : Math.round(headerKasaVal).toLocaleString("tr-TR") + " TL";
         }
         metricRisk.textContent = formatRisk(data.risk_per_trade);
+        latestScanInfo =
+          data.last_scan && typeof data.last_scan === "object" ? data.last_scan : null;
         renderRecommendations(data.recommendations);
         renderMyMatches(data.pending_kupons, data.recent_kupons);
         applyPerformanceStats(data.performance);
@@ -6928,6 +7523,10 @@
       }
 
       initSections();
+      initViewMode();
+      initHintDots();
+      initRecFilter();
+      initOnboarding();
       bindExclusivePanelAccordions();
       fetchStatus();
       fetchFinanceMetrics();

@@ -86,6 +86,63 @@ Sistem arka planda diğer maçları tarar; **tüm tarama listesini** panelde gö
 > **Geliştirici / bakım:** Teknik manifest → [`docs/panel-ui-manifest.md`](docs/panel-ui-manifest.md)  
 > Panel UI güncellenince bu bölüm ve manifest birlikte kontrol edilir.
 
+### İlk açılış: 4 adımlık rehber
+
+Paneli ilk kez açtığınızda ekranın ortasında 4 adımlık kısa bir rehber çıkar:
+sistem ne yapar → Fırsatlar kartı nasıl okunur → ölçüm modu neden güvenli →
+Basit/Uzman görünümü. **Atla** ya da son adımdaki **Anladım, başla** dedikten
+sonra bir daha çıkmaz (Escape de kapatır). Tekrar görmek isterseniz:
+**Yardim → Ilk kullanim rehberini tekrar goster**.
+
+### Sekmeler ve görünüm modu
+
+Panelin üstünde (telefonda altında) kalıcı bir menü var:
+
+| Sekme | Ne gösterir |
+|-------|-------------|
+| **Firsatlar** | Sistemin bulduğu öneriler — ne yapmanız gerektiği burada yazar |
+| **Kuponlarim** | Oynadığınız kuponlar ve sonuçları |
+| **Karne** | Bütçeniz, kâr oranınız ve sistemin kanıtı (Kanıt Karnesi) |
+| **Strateji** | Yalnızca **Uzman** görünümünde — seçici mod (HERO) ve strateji kartları |
+| **Ayarlar** | Risk seviyesi, bildirimler, ligler |
+| **Yardim** | Rehber ve teknik teşhis |
+
+Sağ üstteki **Basit / Uzman** anahtarı görünümü belirler. **Basit** (varsayılan) yalnızca
+kullanmanız gereken bilgileri gösterir; **Uzman** strateji kartlarını ve API kredisi gibi
+teknik ayrıntıları açar. Seçiminiz tarayıcıda saklanır.
+
+Başlıkların yanındaki küçük **?** düğmesine dokununca terimin tek cümlelik açıklaması
+ekranda belirir (Getiri, Kanıt Karnesi, Seçici mod, Aktif öneriler).
+
+### Fırsatlar sekmesi — öneriyi okumak
+
+Her öneri bir kart. Kartta önce ne olduğu, sonra ne yapmanız gerektiği yazar:
+
+> Nesine bu bahse **2.20** veriyor, keskin piyasanın adil fiyatı **2.00**.
+> Yani Nesine yaklaşık **%10 fazla ödüyor**; değer farkı bu.
+>
+> **Ne yapmalı:** Nesine'de bu oranı (ya da daha iyisini) bul, tutarı oyna ve
+> aşağıdan **Oynadım**'a bas.
+
+İki tür kart vardır:
+
+| Rozet | Anlamı | Ne yapmalı |
+|-------|--------|------------|
+| **ONERI** | Oyna adayı — tutar da yazılmıştır | Oranı bulup oynayın, sonra **Oynadım** |
+| **IZLE** | Fark henüz oynamaya yetmiyor | Şimdilik bir şey yapmayın; sistem izliyor |
+
+Üstteki **Tumu / Oyna adayi / Sadece izle** düğmeleri listeyi süzer; yanlarındaki
+sayı o türden kaç kayıt olduğunu gösterir. İlk kez gördüğünüz kartlarda **YENI**
+etiketi çıkar. **Pas Gec** kartı listeden düşürür, kasaya dokunmaz.
+
+**Ölçüm modu açıkken** kartların üstünde sarı bir not durur: buradaki hiçbir işlem
+gerçek kupon açmaz ve kasanızı değiştirmez — **Oynadım** yalnızca "ben bunu oynadım"
+notu düşer.
+
+Liste boşsa panel nedenini yazar (ör. "Son tarama 14:32 · 186 maçta Nesine ile keskin
+piyasa karşılaştırıldı, hiçbirinde Nesine yeterince yüksek kalmadı"). **Boş liste
+normaldir** — fiyat farkı çıkmadıkça sistem sessiz kalır.
+
 ### Özet sekmesi
 
 **Üstte 3 kart (her zaman görünür):**
